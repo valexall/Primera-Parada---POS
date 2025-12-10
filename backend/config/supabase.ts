@@ -1,5 +1,14 @@
+// backend/config/supabase.ts
 import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://iggjjdxihmpgsdrzczgo.supabase.co';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnZ2pqZHhpaG1wZ3NkcnpjemdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzNDc1MTQsImV4cCI6MjA3ODkyMzUxNH0.cE8mdhzmCSIgvKx2FD5bd9INMIIicVeVGNW9eJUhOmA';
+dotenv.config();
+
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
+
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('❌ Error: Faltan variables de entorno de Supabase');
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
