@@ -23,3 +23,28 @@ export interface Order {
   items: OrderItem[];
 }
 
+export interface Sale {
+  id: string;
+  orderId: string;
+  amount: number;
+  paymentMethod: 'Efectivo' | 'Yape';
+  date: string;
+}
+
+export interface Expense {
+  id: string;
+  description: string;
+  amount: number;
+  category: 'Servicios' | 'Personal' | 'Insumos' | 'Otros';
+  date: string;
+}
+
+export interface DailySummary {
+  totalSales: number;
+  totalExpenses: number;
+  netIncome: number;
+  breakdown: {
+    cash: number;
+    yape: number;
+  };
+}

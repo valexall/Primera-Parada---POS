@@ -3,6 +3,9 @@ import cors from 'cors';
 import morgan from 'morgan';
 import menuRoutes from './routes/menuRoutes';
 import orderRoutes from './routes/orderRoutes';
+import salesRoutes from './routes/salesRoutes';
+import expensesRoutes from './routes/expensesRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
 const app = express();
 const PORT = process.env.PORT || 3001;
 // Middleware
@@ -12,6 +15,10 @@ app.use(morgan('dev'));
 // Routes
 app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/sales', salesRoutes);
+app.use('/api/expenses', expensesRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({
