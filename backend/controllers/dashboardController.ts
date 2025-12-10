@@ -2,43 +2,68 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
 
+// --- Helpers & Constantes ---
+
+const getTodayRange = () => {
+  const today = new Date().toISOString().split('T')[0];
+  return {
+    date: today,
+    start: `${today}T00:00:00`,
+    end: `${today}T23:59:59`
+  };
+};
+
+// Función genérica para sumar propiedades de un array de objetos
+const calculateSum = <T>(data: T[] | null, key: keyof T): number => {
+  return data?.reduce((sum, item) => sum + Number(item[key]), 0) || 0;
+};
+
+// --- Controller ---
+
 export const getDailySummary = async (req: Request, res: Response) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const { date, start, end } = getTodayRange();
 
-    // 1. Obtener total de ventas del día
-    const { data: salesData, error: salesError } = await supabase
-      .from('sales')
-      .select('total_amount, payment_method')
-      .gte('created_at', `${today}T00:00:00`)
-      .lte('created_at', `${today}T23:59:59`);
+    // 1. Ejecutar consultas en paralelo para mejorar rendimiento
+    const [salesResult, expensesResult] = await Promise.all([
+      supabase
+        .from('sales')
+        .select('total_amount, payment_method')
+        .gte('created_at', start)
+        .lte('created_at', end),
+        
+      supabase
+        .from('expenses')
+        .select('amount')
+        .gte('created_at', start)
+        .lte('created_at', end)
+    ]);
 
-    if (salesError) throw salesError;
+    if (salesResult.error) throw salesResult.error;
+    if (expensesResult.error) throw expensesResult.error;
 
-    // 2. Obtener total de gastos del día
-    const { data: expensesData, error: expensesError } = await supabase
-      .from('expenses')
-      .select('amount')
-      .gte('created_at', `${today}T00:00:00`)
-      .lte('created_at', `${today}T23:59:59`);
+    const salesData = salesResult.data;
+    const expensesData = expensesResult.data;
 
-    if (expensesError) throw expensesError;
+    // 2. Calcular totales generales
+    const totalSales = calculateSum(salesData, 'total_amount');
+    const totalExpenses = calculateSum(expensesData, 'amount');
 
-    // 3. Calcular totales
-    const totalSales = salesData?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0;
-    const totalExpenses = expensesData?.reduce((sum, exp) => sum + Number(exp.amount), 0) || 0;
-    
-    // Desglose por método de pago
-    const salesByCash = salesData
-      ?.filter(s => s.payment_method === 'Efectivo')
-      .reduce((sum, s) => sum + Number(s.total_amount), 0) || 0;
-      
-    const salesByYape = salesData
-      ?.filter(s => s.payment_method === 'Yape')
-      .reduce((sum, s) => sum + Number(s.total_amount), 0) || 0;
+    // 3. Calcular desglose por método de pago
+    // Nota: Filtramos en memoria ya que tenemos los datos del día
+    const salesByCash = calculateSum(
+      salesData?.filter(s => s.payment_method === 'Efectivo'), 
+      'total_amount'
+    );
 
+    const salesByYape = calculateSum(
+      salesData?.filter(s => s.payment_method === 'Yape'), 
+      'total_amount'
+    );
+
+    // 4. Respuesta
     res.json({
-      date: today,
+      date,
       totalSales,
       totalExpenses,
       netIncome: totalSales - totalExpenses,
