@@ -1,0 +1,210 @@
+import { Request, Response } from 'express';
+import { supabase } from '../config/supabase';
+export const getOrders = async (req: Request, res: Response) => {
+  try {
+    const {
+      data: ordersData,
+      error: ordersError
+    } = await supabase.from('orders').select('*').order('timestamp', {
+      ascending: false
+    });
+    if (ordersError) throw ordersError;
+    const ordersWithItems = await Promise.all((ordersData || []).map(async order => {
+      const {
+        data: itemsData,
+        error: itemsError
+      } = await supabase.from('order_items').select('*').eq('order_id', order.id);
+      if (itemsError) throw itemsError;
+      return {
+        id: order.id,
+        timestamp: order.timestamp,
+        status: order.status,
+        items: (itemsData || []).map(item => ({
+          menuItemId: item.menu_item_id,
+          menuItemName: item.menu_item_name,
+          price: item.price,
+          quantity: item.quantity,
+          notes: item.notes
+        }))
+      };
+    }));
+    res.json(ordersWithItems);
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({
+      error: 'Error fetching orders'
+    });
+  }
+};
+export const getOrdersByStatus = async (req: Request, res: Response) => {
+  try {
+    const {
+      status
+    } = req.params;
+    let query = supabase.from('orders').select('*').order('timestamp', {
+      ascending: false
+    });
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+    const {
+      data: ordersData,
+      error: ordersError
+    } = await query;
+    if (ordersError) throw ordersError;
+    const ordersWithItems = await Promise.all((ordersData || []).map(async order => {
+      const {
+        data: itemsData,
+        error: itemsError
+      } = await supabase.from('order_items').select('*').eq('order_id', order.id);
+      if (itemsError) throw itemsError;
+      return {
+        id: order.id,
+        timestamp: order.timestamp,
+        status: order.status,
+        items: (itemsData || []).map(item => ({
+          menuItemId: item.menu_item_id,
+          menuItemName: item.menu_item_name,
+          price: item.price,
+          quantity: item.quantity,
+          notes: item.notes
+        }))
+      };
+    }));
+    res.json(ordersWithItems);
+  } catch (error) {
+    console.error('Error fetching orders by status:', error);
+    res.status(500).json({
+      error: 'Error fetching orders by status'
+    });
+  }
+};
+export const createOrder = async (req: Request, res: Response) => {
+  try {
+    const {
+      items
+    } = req.body;
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        error: 'Order items are required and must be a non-empty array'
+      });
+    }
+    // Validate each item
+    for (const item of items) {
+      if (!item.menuItemId || !item.menuItemName || item.price === undefined || item.quantity === undefined) {
+        return res.status(400).json({
+          error: 'Each order item must have menuItemId, menuItemName, price, and quantity'
+        });
+      }
+      if (typeof item.price !== 'number' || item.price <= 0) {
+        return res.status(400).json({
+          error: 'Price must be a positive number'
+        });
+      }
+      if (typeof item.quantity !== 'number' || item.quantity <= 0 || !Number.isInteger(item.quantity)) {
+        return res.status(400).json({
+          error: 'Quantity must be a positive integer'
+        });
+      }
+    }
+    const timestamp = Date.now();
+    const orderId = `ORD-${timestamp.toString().slice(-6)}`;
+    // Insert order
+    const {
+      data: orderData,
+      error: orderError
+    } = await supabase.from('orders').insert([{
+      id: orderId,
+      timestamp,
+      status: 'Pendiente'
+    }]).select().single();
+    if (orderError) throw orderError;
+    // Insert order items
+    const orderItems = items.map((item: any) => ({
+      order_id: orderId,
+      menu_item_id: item.menuItemId,
+      menu_item_name: item.menuItemName,
+      price: item.price,
+      quantity: item.quantity,
+      notes: item.notes || null
+    }));
+    const {
+      error: itemsError
+    } = await supabase.from('order_items').insert(orderItems);
+    if (itemsError) throw itemsError;
+    res.status(201).json({
+      id: orderId,
+      timestamp,
+      status: 'Pendiente',
+      items
+    });
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({
+      error: 'Error creating order'
+    });
+  }
+};
+export const updateOrderStatus = async (req: Request, res: Response) => {
+  try {
+    const {
+      id
+    } = req.params;
+    const {
+      status
+    } = req.body;
+    if (!id) {
+      return res.status(400).json({
+        error: 'Order ID is required'
+      });
+    }
+    if (!status) {
+      return res.status(400).json({
+        error: 'Status is required'
+      });
+    }
+    const validStatuses = ['Pendiente', 'Listo', 'Entregado'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        error: `Status must be one of: ${validStatuses.join(', ')}`
+      });
+    }
+    const timestamp = Date.now();
+    const {
+      data,
+      error
+    } = await supabase.from('orders').update({
+      status,
+      timestamp
+    }).eq('id', id).select().single();
+    if (error) throw error;
+    if (!data) {
+      return res.status(404).json({
+        error: 'Order not found'
+      });
+    }
+    // Fetch order items
+    const {
+      data: itemsData,
+      error: itemsError
+    } = await supabase.from('order_items').select('*').eq('order_id', id);
+    if (itemsError) throw itemsError;
+    res.json({
+      id: data.id,
+      timestamp: data.timestamp,
+      status: data.status,
+      items: (itemsData || []).map(item => ({
+        menuItemId: item.menu_item_id,
+        menuItemName: item.menu_item_name,
+        price: item.price,
+        quantity: item.quantity,
+        notes: item.notes
+      }))
+    });
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    res.status(500).json({
+      error: 'Error updating order status'
+    });
+  }
+};
