@@ -38,52 +38,30 @@ export const registerPurchase = async (req: Request, res: Response) => {
   try {
     const { supplyId, quantity, cost, description } = req.body;
     
-    // 1. Registrar movimiento
-    const { error: moveError } = await supabase
-      .from('supply_movements')
-      .insert([{
-        supply_id: supplyId,
-        type: 'Compra',
-        quantity,
-        cost,
-        description: description || 'Compra de reposición'
-      }]);
-    
-    if (moveError) throw moveError;
-
-    // 2. Registrar Gasto Automáticamente (Integración con Finanzas)
-    // Buscamos el nombre del insumo para la descripción del gasto
-    const { data: supply } = await supabase.from('supplies').select('name').eq('id', supplyId).single();
-    
-    await supabase.from('expenses').insert([{
-        description: `Compra Insumo: ${supply?.name}`,
-        amount: cost,
-        category: 'Insumos'
-    }]);
-
-    // 3. Actualizar Stock Actual (RPC function es ideal, pero haremos update directo por simplicidad)
-    // Nota: En producción usar una función RPC de supabase para atomicidad
-    const { data: currentData } = await supabase
+    // Obtenemos el nombre primero (necesario para el log de gastos)
+    const { data: supply } = await supabase
         .from('supplies')
-        .select('current_stock')
+        .select('name')
         .eq('id', supplyId)
         .single();
-    
-    const newStock = (currentData?.current_stock || 0) + Number(quantity);
 
-    const { data: updatedSupply, error: updateError } = await supabase
-      .from('supplies')
-      .update({ current_stock: newStock })
-      .eq('id', supplyId)
-      .select()
-      .single();
+    if (!supply) return res.status(404).json({ error: 'Insumo no encontrado' });
 
-    if (updateError) throw updateError;
+    // LLAMADA RPC TRANSACCIONAL
+    const { error } = await supabase.rpc('register_purchase_transaction', {
+      p_supply_id: supplyId,
+      p_quantity: quantity,
+      p_cost: cost,
+      p_description: description || 'Compra de reposición',
+      p_supply_name: supply.name
+    });
+
+    if (error) throw error;
     
-    res.json(updatedSupply);
+    res.json({ message: 'Compra registrada exitosamente' });
 
   } catch (error) {
-    console.error(error);
+    console.error('Error RPC:', error);
     res.status(500).json({ error: 'Error registrando compra' });
   }
 };
