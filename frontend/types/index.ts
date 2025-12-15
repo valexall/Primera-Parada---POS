@@ -48,3 +48,30 @@ export interface DailySummary {
     yape: number;
   };
 }
+
+export interface Supply {
+  id: string;
+  name: string;
+  unit: string;
+  current_stock: number;
+  min_stock: number;
+}
+
+export interface PurchasePayload {
+  supplyId: string;
+  quantity: number;
+  cost: number;
+  description?: string;
+}
+
+export interface User {
+  email: string;
+  name: string;
+  role: 'admin' | 'waiter';
+}
+
+export interface AuthState {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+}

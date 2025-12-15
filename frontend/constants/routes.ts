@@ -6,7 +6,9 @@ export const ROUTES = {
   ORDERS: '/orders',
   KITCHEN: '/kitchen',
   CASHIER: '/cashier',   
-  DASHBOARD: '/dashboard'
+  DASHBOARD: '/dashboard',
+  INVENTORY: '/inventory',
+  USERS: '/users',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;
