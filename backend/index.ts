@@ -6,18 +6,22 @@ import orderRoutes from './routes/orderRoutes';
 import salesRoutes from './routes/salesRoutes';
 import expensesRoutes from './routes/expensesRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
+import inventoryRoutes from './routes/inventoryRoutes';
+import authRoutes from './routes/authRoutes';
 const app = express();
 const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+app.use('/api/inventory', inventoryRoutes);
 // Routes
 app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/sales', salesRoutes);
 app.use('/api/expenses', expensesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/auth', authRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
