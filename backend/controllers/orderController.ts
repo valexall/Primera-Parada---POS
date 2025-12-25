@@ -19,6 +19,7 @@ export const getOrders = async (req: Request, res: Response) => {
         id: order.id,
         timestamp: order.timestamp,
         status: order.status,
+        tableNumber: order.table_number,
         items: (itemsData || []).map(item => ({
           menuItemId: item.menu_item_id,
           menuItemName: item.menu_item_name,
@@ -62,6 +63,7 @@ export const getOrdersByStatus = async (req: Request, res: Response) => {
         id: order.id,
         timestamp: order.timestamp,
         status: order.status,
+        tableNumber: order.table_number,
         items: (itemsData || []).map(item => ({
           menuItemId: item.menu_item_id,
           menuItemName: item.menu_item_name,
@@ -81,13 +83,12 @@ export const getOrdersByStatus = async (req: Request, res: Response) => {
 };
 export const createOrder = async (req: Request, res: Response) => {
   try {
-    const {
-      items
-    } = req.body;
+    const { items, tableNumber } = req.body;
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({
-        error: 'Order items are required and must be a non-empty array'
-      });
+      return res.status(400).json({ error: 'Items requeridos' });
+    }
+    if (!tableNumber) {
+      return res.status(400).json({ error: 'El número de mesa es obligatorio' });
     }
     // Validate each item
     for (const item of items) {
@@ -110,14 +111,16 @@ export const createOrder = async (req: Request, res: Response) => {
     const timestamp = Date.now();
     const orderId = `ORD-${timestamp.toString().slice(-6)}`;
     // Insert order
-    const {
-      data: orderData,
-      error: orderError
-    } = await supabase.from('orders').insert([{
-      id: orderId,
-      timestamp,
-      status: 'Pendiente'
-    }]).select().single();
+    const { data: orderData, error: orderError } = await supabase
+      .from('orders')
+      .insert([{
+        id: orderId,
+        timestamp,
+        status: 'Pendiente',
+        table_number: tableNumber // <--- AQUÍ
+      }])
+      .select()
+      .single();
     if (orderError) throw orderError;
     // Insert order items
     const orderItems = items.map((item: any) => ({
@@ -136,6 +139,7 @@ export const createOrder = async (req: Request, res: Response) => {
       id: orderId,
       timestamp,
       status: 'Pendiente',
+      tableNumber,
       items
     });
   } catch (error) {

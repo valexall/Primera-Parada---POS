@@ -20,6 +20,7 @@ export interface Order {
   id: string;
   timestamp: number;
   status: OrderStatus;
+  tableNumber?: string;
   items: OrderItem[];
 }
 
