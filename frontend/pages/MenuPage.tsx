@@ -1,142 +1,197 @@
 import React, { useEffect, useState } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon } from 'lucide-react';
+import { PlusIcon, PencilIcon, TrashIcon, SearchIcon, XIcon, SaveIcon } from 'lucide-react';
 import { MenuItem } from '../types';
 import { menuService } from '../services/menuService';
+import toast, { Toaster } from 'react-hot-toast';
+
 const MenuPage: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [isAdding, setIsAdding] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    price: ''
-  });
+  const [formData, setFormData] = useState({ name: '', price: '' });
+
   useEffect(() => {
     loadMenu();
   }, []);
+
   const loadMenu = async () => {
     const items = await menuService.getAll();
     setMenuItems(items);
   };
+
+  const openModal = (item?: MenuItem) => {
+    if (item) {
+      setEditingId(item.id);
+      setFormData({ name: item.name, price: item.price.toString() });
+    } else {
+      setEditingId(null);
+      setFormData({ name: '', price: '' });
+    }
+    setIsModalOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.price) return;
-    if (editingId) {
-      await menuService.update(editingId, {
-        name: formData.name,
-        price: parseFloat(formData.price)
-      });
-      setEditingId(null);
-    } else {
-      await menuService.create({
-        name: formData.name,
-        price: parseFloat(formData.price)
-      });
-      setIsAdding(false);
-    }
-    setFormData({
-      name: '',
-      price: ''
-    });
-    loadMenu();
-  };
-  const handleEdit = (item: MenuItem) => {
-    setEditingId(item.id);
-    setFormData({
-      name: item.name,
-      price: item.price.toString()
-    });
-    setIsAdding(true);
-  };
-  const handleDelete = async (id: string) => {
-    if (window.confirm('¿Estás seguro de eliminar este elemento?')) {
-      const success = await menuService.delete(id);
-      if (success) {
-        loadMenu();
+    
+    try {
+      if (editingId) {
+        await menuService.update(editingId, { name: formData.name, price: parseFloat(formData.price) });
+        toast.success('Plato actualizado');
+      } else {
+        await menuService.create({ name: formData.name, price: parseFloat(formData.price) });
+        toast.success('Plato creado');
       }
+      setIsModalOpen(false);
+      loadMenu();
+    } catch (e) {
+      toast.error('Error al guardar');
     }
   };
-  const handleCancel = () => {
-    setIsAdding(false);
-    setEditingId(null);
-    setFormData({
-      name: '',
-      price: ''
-    });
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('¿Eliminar este plato?')) {
+      await menuService.delete(id);
+      toast.success('Eliminado correctamente');
+      loadMenu();
+    }
   };
-  return <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Menú del Día</h2>
-        {!isAdding && <button onClick={() => setIsAdding(true)} className="flex items-center px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700">
-            <PlusIcon className="mr-2 h-5 w-5" />
-            Agregar Plato
-          </button>}
+
+  const filteredItems = menuItems.filter(item => 
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div>
+      <Toaster />
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Gestión de Menú</h1>
+          <p className="text-slate-500 text-sm">Administra los precios y platos disponibles</p>
+        </div>
+        <button 
+          onClick={() => openModal()} 
+          className="px-5 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 font-bold flex items-center gap-2 shadow-lg shadow-slate-200 transition-transform active:scale-95"
+        >
+          <PlusIcon size={18} /> Nuevo Plato
+        </button>
       </div>
-      {isAdding && <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-          <h3 className="text-lg font-semibold mb-4">
-            {editingId ? 'Editar Plato' : 'Nuevo Plato'}
-          </h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nombre del Plato
-              </label>
-              <input type="text" value={formData.name} onChange={e => setFormData({
-            ...formData,
-            name: e.target.value
-          })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500" required />
+
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        {/* Toolbar */}
+        <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+          <div className="relative max-w-md">
+            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Buscar plato..." 
+              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 text-slate-500 font-bold text-xs uppercase tracking-wider">
+              <tr>
+                <th className="px-6 py-4">Nombre del Plato</th>
+                <th className="px-6 py-4">Precio</th>
+                <th className="px-6 py-4 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredItems.map(item => (
+                <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
+                  <td className="px-6 py-4 font-bold text-slate-700">{item.name}</td>
+                  <td className="px-6 py-4 font-mono text-slate-600">S/. {item.price.toFixed(2)}</td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openModal(item)} className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
+                        <PencilIcon size={18} />
+                      </button>
+                      <button onClick={() => handleDelete(item.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                        <TrashIcon size={18} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filteredItems.length === 0 && (
+            <div className="p-8 text-center text-slate-400">
+              No se encontraron resultados
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Precio (S/.)
-              </label>
-              <input type="number" step="0.01" value={formData.price} onChange={e => setFormData({
-            ...formData,
-            price: e.target.value
-          })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500" required />
-            </div>
-            <div className="flex gap-2">
-              <button type="submit" className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700">
-                {editingId ? 'Actualizar' : 'Agregar'}
-              </button>
-              <button type="button" onClick={handleCancel} className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-amber-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                Plato
-              </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                Precio
-              </th>
-              <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">
-                Acciones
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {menuItems.map(item => <tr key={item.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 text-sm text-gray-900">{item.name}</td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  S/. {item.price.toFixed(2)}
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button onClick={() => handleEdit(item)} className="text-amber-600 hover:text-amber-800 mr-3">
-                    <PencilIcon className="h-5 w-5" />
-                  </button>
-                  <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:text-red-800">
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
-                </td>
-              </tr>)}
-          </tbody>
-        </table>
+          )}
+        </div>
       </div>
-    </div>;
+
+      {/* --- MODAL --- */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 relative animate-in fade-in zoom-in duration-200">
+            <button 
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 text-slate-400"
+            >
+              <XIcon size={20} />
+            </button>
+            
+            <h2 className="text-xl font-bold text-slate-800 mb-6">
+              {editingId ? 'Editar Plato' : 'Crear Nuevo Plato'}
+            </h2>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">Nombre</label>
+                <input 
+                  autoFocus
+                  type="text" 
+                  className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-medium"
+                  value={formData.name}
+                  onChange={e => setFormData({...formData, name: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">Precio (S/.)</label>
+                <input 
+                  type="number" 
+                  step="0.10"
+                  className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-medium"
+                  value={formData.price}
+                  onChange={e => setFormData({...formData, price: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-50 rounded-xl transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="flex-1 py-3 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 shadow-lg shadow-amber-200 transition-transform active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <SaveIcon size={18} /> Guardar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
+
 export default MenuPage;

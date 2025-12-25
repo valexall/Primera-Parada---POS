@@ -12,13 +12,17 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
     "axios": "^1.7.7",
+    "clsx": "^2.1.1",
     "cors": "latest",
     "express": "^4.19.2",
+    "framer-motion": "^12.23.26",
     "lucide-react": "0.522.0",
     "morgan": "^1.10.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "react-router-dom": "^6.26.2"
+    "react-hot-toast": "^2.6.0",
+    "react-router-dom": "^6.26.2",
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.18",

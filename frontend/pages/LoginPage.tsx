@@ -2,54 +2,60 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { LockIcon, UserIcon } from 'lucide-react';
+import { LockIcon, UserIcon, ArrowRightIcon, Loader2 } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
     
     try {
       const response = await api.post('/auth/login', { email, password });
       const { token, user } = response.data;
-      
       login(token, user);
-      navigate('/'); // Redirigir al home
+      navigate('/'); 
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Error al iniciar sesión');
+      setError(err.response?.data?.error || 'Credenciales incorrectas');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="bg-white p-8 md:p-10 rounded-3xl shadow-xl w-full max-w-sm border border-slate-100">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-amber-600">Restaurante Primera Parada</h1>
-          <p className="text-gray-500">Sistema de Gestión Integral</p>
+          <div className="w-14 h-14 bg-amber-500 rounded-2xl mx-auto flex items-center justify-center text-white shadow-lg shadow-amber-200 mb-4 transform -rotate-6">
+            <span className="text-2xl font-bold">P</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-800">Bienvenido</h1>
+          <p className="text-slate-500 text-sm mt-1">Sistema de Gestión - Primera Parada</p>
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm">
-            {error}
+          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl mb-6 text-sm font-medium flex items-center animate-pulse">
+            ⚠️ {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">Correo Electrónico</label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                <UserIcon className="h-5 w-5 text-gray-400" />
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase ml-1">Correo</label>
+            <div className="relative group">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 group-focus-within:text-amber-500 transition-colors">
+                <UserIcon size={18} />
               </span>
               <input
                 type="email"
-                className="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all font-medium text-slate-700"
                 placeholder="usuario@primeraparada.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -58,15 +64,15 @@ const LoginPage: React.FC = () => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">Contraseña</label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                <LockIcon className="h-5 w-5 text-gray-400" />
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase ml-1">Contraseña</label>
+            <div className="relative group">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 group-focus-within:text-amber-500 transition-colors">
+                <LockIcon size={18} />
               </span>
               <input
                 type="password"
-                className="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all font-medium text-slate-700"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -77,9 +83,10 @@ const LoginPage: React.FC = () => {
 
           <button
             type="submit"
-            className="w-full bg-amber-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-amber-700 transition duration-300"
+            disabled={isLoading}
+            className="w-full bg-slate-900 text-white font-bold py-3.5 px-4 rounded-xl hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-slate-200"
           >
-            INGRESAR
+            {isLoading ? <Loader2 className="animate-spin" /> : <>INGRESAR <ArrowRightIcon size={18} /></>}
           </button>
         </form>
       </div>
