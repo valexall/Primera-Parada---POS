@@ -8,14 +8,11 @@ const MenuPage: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', price: '' });
 
-  useEffect(() => {
-    loadMenu();
-  }, []);
+  useEffect(() => { loadMenu(); }, []);
 
   const loadMenu = async () => {
     const items = await menuService.getAll();
@@ -52,12 +49,39 @@ const MenuPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('¿Eliminar este plato?')) {
-      await menuService.delete(id);
-      toast.success('Eliminado correctamente');
-      loadMenu();
-    }
+  const handleDelete = (id: string) => {
+    // Alerta personalizada "In-App"
+    toast((t) => (
+      <div className="flex flex-col gap-3">
+        <div>
+          <p className="font-bold text-slate-800">¿Estás seguro?</p>
+          <p className="text-sm text-slate-500">Eliminarás este plato permanentemente.</p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="flex-1 px-3 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              await menuService.delete(id);
+              toast.success('Plato eliminado');
+              loadMenu();
+            }}
+            className="flex-1 px-3 py-2 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 shadow-md shadow-red-200"
+          >
+            Sí, eliminar
+          </button>
+        </div>
+      </div>
+    ), { 
+      duration: 5000, 
+      icon: '🗑️',
+      style: { minWidth: '300px' } 
+    });
   };
 
   const filteredItems = menuItems.filter(item => 

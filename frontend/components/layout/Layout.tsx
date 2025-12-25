@@ -16,14 +16,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  // Estilo para links activos
   const getLinkClass = (path: string) => {
     const active = location.pathname === path;
     return `
-      flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
+      flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group font-medium
       ${active 
         ? 'bg-amber-500 text-white shadow-lg shadow-amber-200 font-bold' 
-        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 font-medium'}
+        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}
     `;
   };
 
@@ -35,7 +34,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="flex h-screen bg-slate-50 font-sans">
       {/* --- SIDEBAR (Desktop) --- */}
-      <aside className="hidden md:flex w-72 bg-white border-r border-slate-200 flex-col p-6 fixed h-full z-10">
+      <aside className="hidden md:flex w-72 bg-white border-r border-slate-200 flex-col p-6 fixed h-full z-20">
         <div className="flex items-center gap-3 px-2 mb-10">
           <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-amber-200">
             <LayoutGridIcon size={24} />
@@ -79,7 +78,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         <div className="mt-auto pt-6 border-t border-slate-100">
           <div className="flex items-center gap-3 px-2 mb-4">
-            <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-bold">
+            <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-bold shrink-0">
               {user?.name.charAt(0).toUpperCase()}
             </div>
             <div className="overflow-hidden">
@@ -103,9 +102,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
 
-        {/* Área Scrollable */}
-        <div className="flex-1 overflow-auto p-4 md:p-8 pb-24 md:pb-8">
-          <div className="max-w-7xl mx-auto">
+        {/* CAMBIO AQUÍ: 
+            Se reemplazó 'overflow-auto' por 'overflow-hidden'.
+            Esto bloquea el scroll del contenedor principal completamente.
+        */}
+        <div className="flex-1 overflow-hidden p-4 md:p-8 pb-24 md:pb-8">
+          <div className="max-w-7xl mx-auto h-full">
             {children}
           </div>
         </div>

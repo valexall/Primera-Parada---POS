@@ -3,12 +3,15 @@ import { ClockIcon, CheckCircleIcon, SoupIcon, BellIcon } from 'lucide-react';
 import { Order, OrderStatus } from '../types';
 import { orderService } from '../services/orderService';
 import { supabaseClient } from '../services/supabaseClient';
+import { SkeletonCard } from '../components/ui/Loader'; // <--- Skeletons
 
 const KitchenPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<OrderStatus | 'Todos'>('Todos');
+  const [isLoading, setIsLoading] = useState(true); // Estado de carga inicial
 
-  const loadOrders = useCallback(async () => {
+  const loadOrders = useCallback(async (isInitial = false) => {
+    if (isInitial) setIsLoading(true);
     try {
       if (filter === 'Todos') {
         const allOrders = await orderService.getByStatus();
@@ -19,26 +22,32 @@ const KitchenPage: React.FC = () => {
       }
     } catch (error) {
       console.error(error);
+    } finally {
+      if (isInitial) setIsLoading(false);
     }
   }, [filter]);
 
+  // Carga inicial (muestra skeleton)
   useEffect(() => {
-    loadOrders();
+    loadOrders(true);
   }, [loadOrders]);
 
+  // Realtime (actualización silenciosa)
   useEffect(() => {
     const channel = supabaseClient
       .channel('kitchen-orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        loadOrders();
+        loadOrders(false);
       })
       .subscribe();
     return () => { supabaseClient.removeChannel(channel); };
   }, [loadOrders]);
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    // Optimistic Update: Actualizar UI antes que el servidor
+    setOrders(current => current.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     await orderService.updateStatus(orderId, newStatus);
-    loadOrders();
+    loadOrders(false);
   };
 
   const getCardStyle = (status: OrderStatus) => {
@@ -52,7 +61,6 @@ const KitchenPage: React.FC = () => {
 
   return (
     <div className="pb-10">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -76,10 +84,19 @@ const KitchenPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Grid de Pedidos */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {orders.map(order => (
-          <div key={order.id} className={`rounded-2xl p-5 transition-all relative ${getCardStyle(order.status)}`}>
+        {/* ESTADO DE CARGA: Skeletons */}
+        {isLoading && (
+          <>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </>
+        )}
+
+        {/* CONTENIDO REAL */}
+        {!isLoading && orders.map(order => (
+          <div key={order.id} className={`rounded-2xl p-5 transition-all relative animate-in fade-in zoom-in duration-300 ${getCardStyle(order.status)}`}>
             
             <div className="flex justify-between items-start mb-4 pb-3 border-b border-slate-100/50">
               <div>
@@ -94,7 +111,6 @@ const KitchenPage: React.FC = () => {
                   {new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                 </div>
               </div>
-              
               {order.status === 'Pendiente' && <BellIcon className="text-amber-500 animate-pulse" />}
             </div>
 
@@ -138,6 +154,13 @@ const KitchenPage: React.FC = () => {
             </div>
           </div>
         ))}
+        
+        {!isLoading && orders.length === 0 && (
+          <div className="col-span-full py-20 text-center text-slate-400 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+            <SoupIcon className="h-16 w-16 mx-auto mb-4 text-slate-300" />
+            <p className="text-xl font-medium">No hay pedidos pendientes</p>
+          </div>
+        )}
       </div>
     </div>
   );

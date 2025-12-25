@@ -2,36 +2,38 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { LockIcon, UserIcon, ArrowRightIcon, Loader2 } from 'lucide-react';
+import { LockIcon, UserIcon, ArrowRightIcon } from 'lucide-react';
+import { Loader } from '../components/ui/Loader';
+import toast, { Toaster } from 'react-hot-toast';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setIsLoading(true);
     
     try {
       const response = await api.post('/auth/login', { email, password });
       const { token, user } = response.data;
       login(token, user);
-      navigate('/'); 
+      navigate('/');
+      toast.success(`Bienvenido, ${user.name}`);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Credenciales incorrectas');
+      toast.error(err.response?.data?.error || 'Credenciales incorrectas');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white p-8 md:p-10 rounded-3xl shadow-xl w-full max-w-sm border border-slate-100">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
+      <Toaster />
+      <div className="bg-white p-8 md:p-10 rounded-[2rem] shadow-2xl w-full max-w-sm border border-slate-100">
         <div className="text-center mb-8">
           <div className="w-14 h-14 bg-amber-500 rounded-2xl mx-auto flex items-center justify-center text-white shadow-lg shadow-amber-200 mb-4 transform -rotate-6">
             <span className="text-2xl font-bold">P</span>
@@ -39,12 +41,6 @@ const LoginPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-800">Bienvenido</h1>
           <p className="text-slate-500 text-sm mt-1">Sistema de Gestión - Primera Parada</p>
         </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl mb-6 text-sm font-medium flex items-center animate-pulse">
-            ⚠️ {error}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-1">
@@ -84,9 +80,9 @@ const LoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-slate-900 text-white font-bold py-3.5 px-4 rounded-xl hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-slate-200"
+            className="w-full bg-slate-900 text-white font-bold py-3.5 px-4 rounded-xl hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-slate-200 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {isLoading ? <Loader2 className="animate-spin" /> : <>INGRESAR <ArrowRightIcon size={18} /></>}
+            {isLoading ? <Loader size={20} color="text-white" /> : <>INGRESAR <ArrowRightIcon size={18} /></>}
           </button>
         </form>
       </div>

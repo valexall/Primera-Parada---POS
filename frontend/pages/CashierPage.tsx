@@ -2,46 +2,94 @@ import React, { useEffect, useState } from 'react';
 import { Order } from '../types';
 import { orderService } from '../services/orderService';
 import { financeService } from '../services/financeService';
-import { DollarSignIcon, CreditCardIcon, FileTextIcon, ReceiptIcon } from 'lucide-react';
+import { DollarSignIcon, CreditCardIcon, ReceiptIcon } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import { SkeletonCard } from '../components/ui/Loader'; // Asumiendo que ya tienes este componente
 
 const CashierPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'Efectivo' | 'Yape'>('Efectivo');
   const [needReceipt, setNeedReceipt] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadOrdersToPay();
   }, []);
 
   const loadOrdersToPay = async () => {
-    const allOrders = await orderService.getByStatus('Entregado'); 
-    setOrders(allOrders);
+    setLoading(true);
+    try {
+      const allOrders = await orderService.getByStatus('Entregado');
+      setOrders(allOrders);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const calculateTotal = (order: Order) => {
     return order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
-  const handleProcessPayment = async () => {
+  const handleProcessPayment = () => {
     if (!selectedOrder) return;
 
-    if (window.confirm(`¿Cobrar S/. ${calculateTotal(selectedOrder).toFixed(2)}?`)) {
-      try {
-        await financeService.createSale(
-          selectedOrder.id,
-          calculateTotal(selectedOrder),
-          paymentMethod,
-          needReceipt
-        );
-        toast.success('¡Cobro registrado!');
-        setSelectedOrder(null);
-        loadOrdersToPay();
-      } catch (error) {
-        toast.error('Error al registrar pago');
+    const total = calculateTotal(selectedOrder).toFixed(2);
+
+    // --- REEMPLAZO DE ALERT NATIVO POR TOAST ---
+    toast((t) => (
+      <div className="flex flex-col gap-3 min-w-[300px]">
+        <div>
+          <p className="font-bold text-slate-800 text-lg">Confirmar Cobro</p>
+          <p className="text-sm text-slate-500">
+            ¿Cobrar <span className="font-bold text-slate-900">S/. {total}</span> con <span className="font-bold text-amber-600">{paymentMethod}</span>?
+          </p>
+        </div>
+        
+        <div className="flex gap-3 mt-2">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="flex-1 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id); // Cerrar alerta
+              executePayment();    // Ejecutar lógica
+            }}
+            className="flex-1 px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-bold hover:bg-green-600 shadow-md shadow-green-200 transition-colors"
+          >
+            Sí, Cobrar
+          </button>
+        </div>
+      </div>
+    ), { 
+      duration: Infinity, // Se queda hasta que el usuario decida
+      position: 'top-center'
+    });
+  };
+
+  // Función separada para la lógica real del pago
+  const executePayment = async () => {
+    if (!selectedOrder) return;
+
+    await toast.promise(
+      financeService.createSale(
+        selectedOrder.id,
+        calculateTotal(selectedOrder),
+        paymentMethod,
+        needReceipt
+      ),
+      {
+        loading: 'Procesando transacción...',
+        success: '¡Pago registrado exitosamente! 💰',
+        error: 'Error al registrar el pago'
       }
-    }
+    );
+    
+    setSelectedOrder(null);
+    loadOrdersToPay();
   };
 
   return (
@@ -56,12 +104,15 @@ const CashierPage: React.FC = () => {
         </header>
 
         <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
-          {orders.length === 0 && (
+          {loading && <SkeletonCard />}
+          
+          {!loading && orders.length === 0 && (
             <div className="h-40 flex items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl">
               No hay mesas por cobrar
             </div>
           )}
-          {orders.map(order => (
+
+          {!loading && orders.map(order => (
             <div 
               key={order.id}
               onClick={() => setSelectedOrder(order)}
@@ -92,7 +143,7 @@ const CashierPage: React.FC = () => {
       </div>
 
       {/* --- COLUMNA DERECHA: PROCESAR PAGO --- */}
-      <div className="md:w-96 bg-white rounded-3xl shadow-xl border border-slate-100 flex flex-col overflow-hidden">
+      <div className="md:w-96 bg-white rounded-3xl shadow-xl border border-slate-100 flex flex-col overflow-hidden shrink-0">
         {selectedOrder ? (
           <>
             <div className="p-6 bg-slate-900 text-white">
