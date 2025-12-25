@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { financeService } from '../services/financeService';
 import { DailySummary, Expense, Sale } from '../types';
 import { TrendingUpIcon, TrendingDownIcon, WalletIcon, CalendarIcon, SearchIcon, ArrowDownCircleIcon } from 'lucide-react';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { SkeletonCard } from '../components/ui/Loader'; // Asegúrate de tener este componente creado
 
 const DashboardPage: React.FC = () => {
@@ -76,7 +76,6 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-12">
-      <Toaster />
       <header>
         <h1 className="text-2xl font-bold text-slate-800">Panel Financiero</h1>
         <p className="text-slate-500 text-sm">Resumen de movimientos y métricas</p>

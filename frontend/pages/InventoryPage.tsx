@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { Supply } from '../types';
 import { PackageIcon, AlertTriangleIcon, PlusIcon, ShoppingCartIcon, CheckCircle2Icon } from 'lucide-react';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 const InventoryPage: React.FC = () => {
   const [supplies, setSupplies] = useState<Supply[]>([]);
@@ -40,7 +40,6 @@ const InventoryPage: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <Toaster />
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Inventario</h2>

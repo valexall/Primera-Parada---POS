@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, SearchIcon, XIcon, SaveIcon } from 'lucide-react';
 import { MenuItem } from '../types';
 import { menuService } from '../services/menuService';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 const MenuPage: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -90,7 +90,6 @@ const MenuPage: React.FC = () => {
 
   return (
     <div>
-      <Toaster />
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Gestión de Menú</h1>

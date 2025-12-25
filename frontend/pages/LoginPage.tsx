@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { LockIcon, UserIcon, ArrowRightIcon } from 'lucide-react';
 import { Loader } from '../components/ui/Loader';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -32,7 +32,6 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
-      <Toaster />
       <div className="bg-white p-8 md:p-10 rounded-[2rem] shadow-2xl w-full max-w-sm border border-slate-100">
         <div className="text-center mb-8">
           <div className="w-14 h-14 bg-amber-500 rounded-2xl mx-auto flex items-center justify-center text-white shadow-lg shadow-amber-200 mb-4 transform -rotate-6">
