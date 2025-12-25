@@ -25,10 +25,18 @@ export interface Order {
 
 export interface Sale {
   id: string;
-  orderId: string;
-  amount: number;
-  paymentMethod: 'Efectivo' | 'Yape';
-  date: string;
+  order_id: string;      
+  total_amount: number; 
+  payment_method: 'Efectivo' | 'Yape';
+  created_at: string;
+  orders?: {
+    id: string;
+    timestamp: number;
+    order_items: {
+      menu_item_name: string;
+      quantity: number;
+    }[];
+  };
 }
 
 export interface Expense {

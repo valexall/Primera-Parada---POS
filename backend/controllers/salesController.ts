@@ -9,6 +9,42 @@ interface CreateSaleBody {
   isReceiptIssued?: boolean;
 }
 
+export const getSalesHistory = async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    let query = supabase
+      .from('sales')
+      .select(`
+        *,
+        orders (
+          id,
+          timestamp,
+          order_items (
+            menu_item_name,
+            quantity
+          )
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (startDate && endDate) {
+      query = query
+        .gte('created_at', `${startDate}T00:00:00`)
+        .lte('created_at', `${endDate}T23:59:59`);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching sales history:', error);
+    res.status(500).json({ error: 'Error obteniendo historial' });
+  }
+};
+
 export const createSale = async (req: Request, res: Response) => {
   try {
     const {

@@ -1,5 +1,5 @@
 import api from './api';
-import { Expense, DailySummary } from '../types';
+import { Expense, DailySummary, Sale } from '../types';
 
 export const financeService = {
   // Ventas
@@ -23,5 +23,12 @@ export const financeService = {
   getDailySummary: async (): Promise<DailySummary> => {
     const response = await api.get('/dashboard/summary');
     return response.data;
+  },
+
+  //Obtener historial
+  getSalesHistory: async (startDate: string, endDate: string): Promise<Sale[]> => {
+    const response = await api.get(`/sales/history?startDate=${startDate}&endDate=${endDate}`);
+    return response.data;
   }
+
 };

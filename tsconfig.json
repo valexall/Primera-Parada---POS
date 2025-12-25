@@ -21,6 +21,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["frontend"],
+  "include": ["frontend", "vite-env.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
