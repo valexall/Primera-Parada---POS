@@ -52,10 +52,10 @@ const KitchenPage: React.FC = () => {
 
   const getCardStyle = (status: OrderStatus) => {
     switch (status) {
-      case 'Pendiente': return 'bg-white border-l-[6px] border-amber-500 shadow-md';
-      case 'Listo': return 'bg-green-50 border-l-[6px] border-green-500 shadow-sm opacity-90';
-      case 'Entregado': return 'bg-slate-100 border-l-[6px] border-slate-300 opacity-60';
-      default: return 'bg-white';
+      case 'Pendiente': return 'bg-white dark:bg-slate-800 border-l-[6px] border-amber-500 shadow-md';
+      case 'Listo': return 'bg-green-50 dark:bg-green-900/20 border-l-[6px] border-green-500 shadow-sm opacity-90';
+      case 'Entregado': return 'bg-slate-100 dark:bg-slate-900 border-l-[6px] border-slate-300 dark:border-slate-700 opacity-60';
+      default: return 'bg-white dark:bg-slate-800';
     }
   };
 
@@ -63,19 +63,19 @@ const KitchenPage: React.FC = () => {
     <div className="pb-10">
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <SoupIcon className="text-amber-500" /> Pantalla de Cocina
           </h1>
-          <p className="text-slate-500 text-sm">Gestión de pedidos en tiempo real</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Gestión de pedidos en tiempo real</p>
         </div>
         
-        <div className="flex bg-slate-200 p-1 rounded-xl">
+        <div className="flex bg-slate-200 dark:bg-slate-700 p-1 rounded-xl">
           {(['Todos', 'Pendiente', 'Listo', 'Entregado'] as const).map(status => (
             <button 
               key={status} 
               onClick={() => setFilter(status)} 
               className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-                filter === status ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                filter === status ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
               }`}
             >
               {status}
@@ -98,15 +98,15 @@ const KitchenPage: React.FC = () => {
         {!isLoading && orders.map(order => (
           <div key={order.id} className={`rounded-2xl p-5 transition-all relative animate-in fade-in zoom-in duration-300 ${getCardStyle(order.status)}`}>
             
-            <div className="flex justify-between items-start mb-4 pb-3 border-b border-slate-100/50">
+            <div className="flex justify-between items-start mb-4 pb-3 border-b border-slate-100/50 dark:border-slate-700/50">
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <span className="bg-slate-800 text-white px-3 py-1 rounded-lg text-xl font-bold shadow-lg shadow-slate-300">
+                  <span className="bg-slate-800 dark:bg-amber-600 text-white px-3 py-1 rounded-lg text-xl font-bold shadow-lg shadow-slate-300 dark:shadow-amber-900/50">
                     Mesa {order.tableNumber || '?'}
                   </span>
-                  <span className="text-xs text-slate-400 font-mono">#{order.id.slice(-4)}</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">#{order.id.slice(-4)}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wide mt-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mt-2">
                   <ClockIcon size={14} />
                   {new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                 </div>
@@ -116,18 +116,18 @@ const KitchenPage: React.FC = () => {
 
             <div className="space-y-2 mb-6">
               {order.items.map((item, index) => (
-                <div key={index} className="flex justify-between items-start p-2 rounded-lg bg-slate-50/50">
+                <div key={index} className="flex justify-between items-start p-2 rounded-lg bg-slate-50/50 dark:bg-slate-900/50">
                   <div className="flex-1">
-                    <span className="font-bold text-slate-700 text-lg block leading-tight">
+                    <span className="font-bold text-slate-700 dark:text-slate-200 text-lg block leading-tight">
                       {item.menuItemName}
                     </span>
                     {item.notes && (
-                      <span className="text-sm text-red-500 font-medium bg-red-50 px-1 rounded block mt-1">
+                      <span className="text-sm text-red-500 dark:text-red-400 font-medium bg-red-50 dark:bg-red-900/30 px-1 rounded block mt-1">
                          * {item.notes}
                       </span>
                     )}
                   </div>
-                  <span className="bg-white border border-slate-200 text-slate-800 font-bold px-3 py-1 rounded-lg text-lg shadow-sm">
+                  <span className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold px-3 py-1 rounded-lg text-lg shadow-sm">
                     x{item.quantity}
                   </span>
                 </div>
@@ -146,7 +146,7 @@ const KitchenPage: React.FC = () => {
               {order.status === 'Listo' && (
                 <button 
                   onClick={() => handleStatusChange(order.id, 'Entregado')}
-                  className="flex-1 py-3 bg-slate-200 text-slate-600 rounded-xl hover:bg-slate-300 font-bold transition-transform active:scale-95"
+                  className="flex-1 py-3 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 font-bold transition-transform active:scale-95"
                 >
                   MARCAR ENTREGADO
                 </button>
@@ -156,8 +156,8 @@ const KitchenPage: React.FC = () => {
         ))}
         
         {!isLoading && orders.length === 0 && (
-          <div className="col-span-full py-20 text-center text-slate-400 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-            <SoupIcon className="h-16 w-16 mx-auto mb-4 text-slate-300" />
+          <div className="col-span-full py-20 text-center text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-900 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
+            <SoupIcon className="h-16 w-16 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
             <p className="text-xl font-medium">No hay pedidos pendientes</p>
           </div>
         )}

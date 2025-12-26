@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { ROUTES } from './constants/routes';
 import { Toaster } from 'react-hot-toast'; // <--- IMPORTANTE
 
@@ -18,31 +19,32 @@ import LoginPage from './pages/LoginPage';
 export function App() {
   return (
     <Router>
-      <AuthProvider>
-        {/* CONFIGURACIÓN DE ALERTAS (TOASTS) */}
-        <Toaster 
-          position="top-center"
-          reverseOrder={false}
-          toastOptions={{
-            style: {
-              background: '#1e293b', // slate-800
-              color: '#fff',
-              borderRadius: '16px',
-              fontSize: '14px',
-              fontWeight: '600',
-              padding: '16px 24px',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-            },
-            success: {
-              iconTheme: { primary: '#10b981', secondary: '#fff' }, // Verde Esmeralda
-              duration: 3000,
-            },
-            error: {
-              iconTheme: { primary: '#ef4444', secondary: '#fff' }, // Rojo
-              duration: 4000,
-            },
-          }}
-        />
+      <ThemeProvider>
+        <AuthProvider>
+          {/* CONFIGURACIÓN DE ALERTAS (TOASTS) */}
+          <Toaster 
+            position="top-center"
+            reverseOrder={false}
+            toastOptions={{
+              style: {
+                background: '#1e293b', // slate-800
+                color: '#fff',
+                borderRadius: '16px',
+                fontSize: '14px',
+                fontWeight: '600',
+                padding: '16px 24px',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+              },
+              success: {
+                iconTheme: { primary: '#10b981', secondary: '#fff' }, // Verde Esmeralda
+                duration: 3000,
+              },
+              error: {
+                iconTheme: { primary: '#ef4444', secondary: '#fff' }, // Rojo
+                duration: 4000,
+              },
+            }}
+          />
 
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -80,6 +82,7 @@ export function App() {
           } />
         </Routes>
       </AuthProvider>
+      </ThemeProvider>
     </Router>
   );
 }

@@ -16,13 +16,13 @@ export const CategoryTabs: React.FC<CategoryTabsProps> = ({ categories, selected
           onClick={() => onSelect(cat)}
           className={`
             relative px-6 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-colors
-            ${selected === cat ? 'text-white' : 'text-slate-600 bg-white hover:bg-slate-100 border border-slate-200'}
+            ${selected === cat ? 'text-white' : 'text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600'}
           `}
         >
           {selected === cat && (
             <motion.div
               layoutId="activeTab"
-              className="absolute inset-0 bg-slate-900 rounded-full"
+              className="absolute inset-0 bg-slate-900 dark:bg-amber-500 rounded-full"
               transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
             />
           )}

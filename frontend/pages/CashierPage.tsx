@@ -156,15 +156,15 @@ const CashierPage: React.FC = () => {
       */}
       <div className={`flex-1 overflow-hidden flex-col ${showMobilePayment ? 'hidden md:flex' : 'flex'}`}>
         <header className="mb-4">
-          <h1 className="text-2xl font-bold text-slate-800">Caja / Cobros</h1>
-          <p className="text-slate-500 text-sm">Mesas con pedidos entregados pendientes de pago</p>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Caja / Cobros</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Mesas con pedidos entregados pendientes de pago</p>
         </header>
 
         <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3 pb-20 md:pb-0">
           {loading && <SkeletonCard />}
           
           {!loading && orders.length === 0 && (
-            <div className="h-40 flex items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl">
+            <div className="h-40 flex items-center justify-center text-slate-400 dark:text-slate-500 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">
               No hay mesas por cobrar
             </div>
           )}
@@ -176,21 +176,21 @@ const CashierPage: React.FC = () => {
               className={`
                 group p-4 rounded-2xl border cursor-pointer transition-all relative overflow-hidden
                 ${selectedOrder?.id === order.id 
-                  ? 'bg-amber-50 border-amber-500 shadow-md ring-1 ring-amber-500' 
-                  : 'bg-white border-slate-200 hover:border-amber-300 hover:shadow-sm'}
+                  ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-500 shadow-md ring-1 ring-amber-500' 
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-600 hover:shadow-sm'}
               `}
             >
               <div className="flex justify-between items-center mb-2">
-                <span className={`px-3 py-1 rounded-lg text-sm font-bold ${selectedOrder?.id === order.id ? 'bg-amber-500 text-white' : 'bg-slate-800 text-white'}`}>
+                <span className={`px-3 py-1 rounded-lg text-sm font-bold ${selectedOrder?.id === order.id ? 'bg-amber-500 text-white' : 'bg-slate-800 dark:bg-amber-600 text-white'}`}>
                   Mesa {order.tableNumber || '?'}
                 </span>
-                <span className="text-xs text-slate-400 font-mono">#{order.id.slice(-4)}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">#{order.id.slice(-4)}</span>
               </div>
               <div className="flex justify-between items-end">
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-slate-500 dark:text-slate-400">
                   {new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                 </div>
-                <div className="text-xl font-bold text-slate-800 group-hover:text-amber-600 transition-colors">
+                <div className="text-xl font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-600 transition-colors">
                   S/. {calculateTotal(order).toFixed(2)}
                 </div>
               </div>
@@ -203,78 +203,78 @@ const CashierPage: React.FC = () => {
           Lógica CSS: Si NO estamos en modo pago móvil, ocultamos esta columna en móvil (hidden),
           pero si showMobilePayment es true, la mostramos (flex). En desktop siempre visible (md:flex).
       */}
-      <div className={`md:w-96 bg-white rounded-3xl md:shadow-xl md:border border-slate-100 flex-col overflow-hidden shrink-0 ${showMobilePayment ? 'flex w-full h-full fixed inset-0 z-50 md:static md:h-auto rounded-none md:rounded-3xl' : 'hidden md:flex'}`}>
+      <div className={`md:w-96 bg-white dark:bg-slate-800 rounded-3xl md:shadow-xl md:border border-slate-100 dark:border-slate-700 flex-col overflow-hidden shrink-0 ${showMobilePayment ? 'flex w-full h-full fixed inset-0 z-50 md:static md:h-auto rounded-none md:rounded-3xl' : 'hidden md:flex'}`}>
         {selectedOrder ? (
           <>
-            <div className="p-5 sm:p-6 bg-slate-900 text-white relative">
+            <div className="p-5 sm:p-6 bg-slate-900 dark:bg-amber-700 text-white relative">
               {/* Botón Volver (Solo Móvil) */}
               <button 
                 onClick={() => setShowMobilePayment(false)}
-                className="md:hidden absolute top-5 left-4 p-2.5 bg-slate-800 rounded-xl hover:bg-slate-700 active:scale-95 transition-all"
+                className="md:hidden absolute top-5 left-4 p-2.5 bg-slate-800 dark:bg-amber-600 rounded-xl hover:bg-slate-700 dark:hover:bg-amber-800 active:scale-95 transition-all"
               >
                 <ArrowLeftIcon size={22} className="text-white"/>
               </button>
 
               <div className="pl-14 md:pl-0">
-                <h2 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Total a Cobrar</h2>
+                <h2 className="text-xs sm:text-sm font-bold text-slate-400 dark:text-amber-100 uppercase tracking-wider mb-1">Total a Cobrar</h2>
                 <div className="text-3xl sm:text-4xl font-bold">S/. {calculateTotal(selectedOrder).toFixed(2)}</div>
-                <div className="text-sm text-slate-400 mt-2">Mesa {selectedOrder.tableNumber} • {selectedOrder.items.length} items</div>
+                <div className="text-sm text-slate-400 dark:text-amber-100 mt-2">Mesa {selectedOrder.tableNumber} • {selectedOrder.items.length} items</div>
               </div>
             </div>
 
             <div className="p-5 sm:p-6 flex-1 overflow-y-auto">
-              <h3 className="font-bold text-slate-800 mb-3 text-sm uppercase">Detalle</h3>
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-3 text-sm uppercase">Detalle</h3>
               <ul className="space-y-3 mb-6">
                 {selectedOrder.items.map((item, idx) => (
-                  <li key={idx} className="flex justify-between text-sm items-center border-b border-slate-50 pb-2 last:border-0">
+                  <li key={idx} className="flex justify-between text-sm items-center border-b border-slate-50 dark:border-slate-700 pb-2 last:border-0">
                     <div className="flex items-center gap-3">
-                      <span className="font-bold text-slate-500 w-5">{item.quantity}x</span>
-                      <span className="text-slate-700 font-medium">{item.menuItemName}</span>
+                      <span className="font-bold text-slate-500 dark:text-slate-400 w-5">{item.quantity}x</span>
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">{item.menuItemName}</span>
                     </div>
-                    <span className="text-slate-900 font-bold">S/. {(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="text-slate-900 dark:text-slate-100 font-bold">S/. {(item.price * item.quantity).toFixed(2)}</span>
                   </li>
                 ))}
               </ul>
 
-              <h3 className="font-bold text-slate-800 mb-3 text-sm uppercase">Método de Pago</h3>
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-3 text-sm uppercase">Método de Pago</h3>
               <div className="grid grid-cols-2 gap-3 mb-6">
                 <button
                   onClick={() => setPaymentMethod('Efectivo')}
-                  className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'Efectivo' ? 'bg-green-50 border-green-500 text-green-700 ring-2 ring-green-500 ring-offset-2 font-bold scale-105' : 'border-slate-200 text-slate-500 hover:bg-slate-50 active:scale-95'}`}
+                  className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'Efectivo' ? 'bg-green-50 dark:bg-green-900/30 border-green-500 text-green-700 dark:text-green-400 ring-2 ring-green-500 ring-offset-2 font-bold scale-105' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95'}`}
                 >
                   <DollarSignIcon size={28} /> 
                   <span className="text-sm sm:text-base font-bold">Efectivo</span>
                 </button>
                 <button
                   onClick={() => setPaymentMethod('Yape')}
-                  className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'Yape' ? 'bg-purple-50 border-purple-500 text-purple-700 ring-2 ring-purple-500 ring-offset-2 font-bold scale-105' : 'border-slate-200 text-slate-500 hover:bg-slate-50 active:scale-95'}`}
+                  className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'Yape' ? 'bg-purple-50 dark:bg-purple-900/30 border-purple-500 text-purple-700 dark:text-purple-400 ring-2 ring-purple-500 ring-offset-2 font-bold scale-105' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95'}`}
                 >
                   <CreditCardIcon size={28} /> 
                   <span className="text-sm sm:text-base font-bold">Yape</span>
                 </button>
               </div>
 
-              <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-slate-200 cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition-colors mb-4">
-                <div className={`w-6 h-6 rounded border-2 flex items-center justify-center shrink-0 ${needReceipt ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-300'}`}>
+              <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 active:bg-slate-100 dark:active:bg-slate-600 transition-colors mb-4">
+                <div className={`w-6 h-6 rounded border-2 flex items-center justify-center shrink-0 ${needReceipt ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-300 dark:border-slate-600'}`}>
                   {needReceipt && <ReceiptIcon size={16} />}
                 </div>
                 <input type="checkbox" checked={needReceipt} onChange={(e) => setNeedReceipt(e.target.checked)} className="hidden" />
-                <span className="text-sm sm:text-base font-medium text-slate-700">Emitir Boleta / Recibo</span>
+                <span className="text-sm sm:text-base font-medium text-slate-700 dark:text-slate-300">Emitir Boleta / Recibo</span>
               </label>
             </div>
 
-            <div className="p-5 sm:p-6 border-t border-slate-100 bg-white">
+            <div className="p-5 sm:p-6 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
               <button
                 onClick={handleProcessPayment}
-                className="w-full py-4 sm:py-5 bg-amber-500 text-white rounded-xl font-bold text-base sm:text-lg hover:bg-amber-600 shadow-xl shadow-amber-200 transition-all active:scale-95 flex items-center justify-center gap-2"
+                className="w-full py-4 sm:py-5 bg-amber-500 text-white rounded-xl font-bold text-base sm:text-lg hover:bg-amber-600 shadow-xl shadow-amber-200 dark:shadow-amber-900/50 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 <DollarSignIcon size={24} /> CONFIRMAR PAGO
               </button>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 p-8 text-center">
+            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
               <DollarSignIcon size={32} />
             </div>
             <p className="font-medium">Selecciona una mesa<br/>para procesar el cobro</p>

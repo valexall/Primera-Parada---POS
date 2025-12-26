@@ -88,13 +88,13 @@ const OrderPage: React.FC = () => {
   // (Extraído para reusarlo en Desktop y Móvil sin duplicar código lógico)
   const CartContent = () => (
     <div className="flex flex-col h-full">
-      <div className="p-6 bg-slate-50 border-b border-slate-200">
+      <div className="p-6 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
         <div className="flex justify-between items-center mb-3">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+          <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
             Mesa Seleccionada
           </label>
           {/* Botón cerrar solo visible en móvil dentro del sheet */}
-          <button onClick={() => setShowMobileCart(false)} className="lg:hidden text-slate-400 hover:text-slate-600">
+          <button onClick={() => setShowMobileCart(false)} className="lg:hidden text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
             <ChevronDownIcon />
           </button>
         </div>
@@ -106,8 +106,8 @@ const OrderPage: React.FC = () => {
               className={`
                 flex-shrink-0 w-12 h-12 rounded-xl font-bold text-sm flex items-center justify-center transition-all
                 ${selectedTable === t 
-                  ? 'bg-orange-600 text-white shadow-lg shadow-orange-200 scale-110' 
-                  : 'bg-white border border-slate-200 text-slate-600 hover:border-orange-300'}
+                  ? 'bg-orange-600 text-white shadow-lg shadow-orange-200 dark:shadow-orange-900/50 scale-110' 
+                  : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300 dark:hover:border-orange-600'}
               `}
             >
               {t}
@@ -125,20 +125,20 @@ const OrderPage: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               key={item.menuItemId} 
-              className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm"
+              className="flex items-center gap-3 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm"
             >
-              <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs">
+              <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-xs">
                 {item.quantity}x
               </div>
               <div className="flex-1">
-                <h4 className="text-sm font-bold text-slate-800">{item.menuItemName}</h4>
-                <div className="text-xs text-slate-500">S/. {item.price * item.quantity}</div>
+                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">{item.menuItemName}</h4>
+                <div className="text-xs text-slate-500 dark:text-slate-400">S/. {item.price * item.quantity}</div>
               </div>
               <div className="flex items-center gap-1">
-                <button onClick={() => updateQuantity(item.menuItemId, -1)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600">
+                <button onClick={() => updateQuantity(item.menuItemId, -1)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
                   <MinusIcon size={16}/>
                 </button>
-                <button onClick={() => updateQuantity(item.menuItemId, 1)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600">
+                <button onClick={() => updateQuantity(item.menuItemId, 1)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
                   <PlusIcon size={16}/>
                 </button>
               </div>
@@ -147,22 +147,22 @@ const OrderPage: React.FC = () => {
           </AnimatePresence>
           
           {orderItems.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-50">
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 opacity-50">
               <ShoppingBagIcon size={48} className="mb-2 stroke-1"/>
               <p>Tu orden está vacía</p>
             </div>
           )}
       </div>
 
-      <div className="p-6 bg-white border-t border-slate-100">
+      <div className="p-6 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700">
         <div className="flex justify-between items-end mb-4">
-          <span className="text-slate-500 font-medium">Total</span>
-          <span className="text-3xl font-bold text-slate-900">S/.{calculateTotal().toFixed(2)}</span>
+          <span className="text-slate-500 dark:text-slate-400 font-medium">Total</span>
+          <span className="text-3xl font-bold text-slate-900 dark:text-slate-100">S/.{calculateTotal().toFixed(2)}</span>
         </div>
         <button
           onClick={handleSubmit}
           disabled={!selectedTable || orderItems.length === 0 || isSubmitting}
-          className={`w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center justify-center gap-2 ${isSubmitting ? 'cursor-wait' : ''}`}
+          className={`w-full bg-slate-900 dark:bg-amber-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 dark:hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center justify-center gap-2 ${isSubmitting ? 'cursor-wait' : ''}`}
         >
           {isSubmitting ? 'Enviando...' : <>Confirmar Orden <ChevronRightIcon size={20} /></>}
         </button>
@@ -176,8 +176,8 @@ const OrderPage: React.FC = () => {
       {/* --- IZQUIERDA: CATÁLOGO (Scrollable) --- */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <header className="mb-4 shrink-0">
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">Nuevo Pedido</h1>
-          <p className="text-slate-500 text-sm">Selecciona los platos para la orden</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">Nuevo Pedido</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Selecciona los platos para la orden</p>
         </header>
 
         {/* Categorías (Sticky) */}
@@ -198,18 +198,18 @@ const OrderPage: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 key={item.id} 
-                className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow cursor-pointer group"
+                className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow cursor-pointer group"
                 onClick={() => addToOrder(item)}
               >
-                <div className="h-24 bg-gradient-to-br from-orange-100 to-amber-50 rounded-xl mb-3 flex items-center justify-center text-3xl">
+                <div className="h-24 bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-900/30 dark:to-amber-900/20 rounded-xl mb-3 flex items-center justify-center text-3xl">
                   🍽️
                 </div>
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-bold text-slate-800 leading-tight mb-1">{item.name}</h3>
-                    <p className="text-slate-400 text-xs">Descripción corta...</p>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100 leading-tight mb-1">{item.name}</h3>
+                    <p className="text-slate-400 dark:text-slate-500 text-xs">Descripción corta...</p>
                   </div>
-                  <span className="bg-slate-900 text-white text-xs font-bold px-2 py-1 rounded-lg">
+                  <span className="bg-slate-900 dark:bg-amber-600 text-white text-xs font-bold px-2 py-1 rounded-lg">
                     S/.{item.price}
                   </span>
                 </div>
@@ -220,7 +220,7 @@ const OrderPage: React.FC = () => {
       </div>
 
       {/* --- DERECHA: RESUMEN (DESKTOP) --- */}
-      <div className="hidden lg:flex w-96 bg-white border-l border-slate-200 flex-col h-full shadow-2xl z-20 relative">
+      <div className="hidden lg:flex w-96 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 flex-col h-full shadow-2xl z-20 relative">
          <CartContent />
       </div>
 
@@ -255,7 +255,7 @@ const OrderPage: React.FC = () => {
             <motion.div 
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="lg:hidden fixed bottom-0 left-0 right-0 h-[85vh] bg-white rounded-t-3xl shadow-2xl z-50 overflow-hidden flex flex-col"
+              className="lg:hidden fixed bottom-0 left-0 right-0 h-[85vh] bg-white dark:bg-slate-800 rounded-t-3xl shadow-2xl z-50 overflow-hidden flex flex-col"
             >
               <CartContent />
             </motion.div>
