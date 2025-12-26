@@ -174,7 +174,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
 
         {/* CONTENIDO SCROLLABLE */}
-        <div className="flex-1 w-full h-full overflow-y-auto md:overflow-hidden p-4 md:p-8 pb-28 md:pb-8 touch-pan-y">
+        <div className="flex-1 w-full h-full overflow-y-auto p-4 md:p-8 pb-28 md:pb-8 touch-pan-y no-scrollbar">
           <div className="max-w-7xl mx-auto h-full">
             {children}
           </div>
