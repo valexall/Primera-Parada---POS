@@ -30,6 +30,7 @@ export interface Sale {
   total_amount: number; 
   payment_method: 'Efectivo' | 'Yape';
   created_at: string;
+  is_receipt_issued?: boolean;
   orders?: {
     id: string;
     timestamp: number;
@@ -38,6 +39,28 @@ export interface Sale {
       quantity: number;
     }[];
   };
+}
+
+export interface Receipt {
+  id: string;
+  saleId: string;
+  orderId: string;
+  orderNumber: string;
+  tableNumber?: string;
+  items: OrderItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  paymentMethod: 'Efectivo' | 'Yape';
+  timestamp: string;
+  receiptNumber: string;
+}
+
+export interface CompanyInfo {
+  name: string;
+  ruc?: string;
+  address: string;
+  phone?: string;
 }
 
 export interface Expense {

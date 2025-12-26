@@ -8,6 +8,7 @@ import expensesRoutes from './routes/expensesRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import inventoryRoutes from './routes/inventoryRoutes';
 import authRoutes from './routes/authRoutes';
+import receiptRoutes from './routes/receiptRoutes';
 const app = express();
 const PORT = process.env.PORT || 3001;
 // Middleware
@@ -22,6 +23,7 @@ app.use('/api/sales', salesRoutes);
 app.use('/api/expenses', expensesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/receipts', receiptRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

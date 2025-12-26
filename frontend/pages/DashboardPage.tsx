@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { financeService } from '../services/financeService';
-import { DailySummary, Expense, Sale } from '../types';
-import { TrendingUpIcon, TrendingDownIcon, WalletIcon, CalendarIcon, SearchIcon, ArrowDownCircleIcon } from 'lucide-react';
+import { receiptService } from '../services/receiptService';
+import { DailySummary, Expense, Sale, Receipt as ReceiptType } from '../types';
+import { TrendingUpIcon, TrendingDownIcon, WalletIcon, CalendarIcon, SearchIcon, ArrowDownCircleIcon, EyeIcon, ReceiptIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { SkeletonCard } from '../components/ui/Loader'; // Asegúrate de tener este componente creado
+import { SkeletonCard } from '../components/ui/Loader';
+import Receipt from '../components/ui/Receipt';
 
 const DashboardPage: React.FC = () => {
   const [summary, setSummary] = useState<DailySummary | null>(null);
@@ -14,6 +16,7 @@ const DashboardPage: React.FC = () => {
     start: new Date().toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
   });
+  const [currentReceipt, setCurrentReceipt] = useState<ReceiptType | null>(null);
   
   // Estado explícito de carga
   const [isLoading, setIsLoading] = useState(true);
@@ -72,6 +75,19 @@ const DashboardPage: React.FC = () => {
     ]);
     setSummary(summaryData);
     setExpenses(expensesData);
+  };
+
+  const handleViewReceipt = async (saleId: string) => {
+    const loadingToast = toast.loading('Cargando recibo...');
+    try {
+      const receipt = await receiptService.getReceipt(saleId);
+      setCurrentReceipt(receipt);
+      toast.dismiss(loadingToast);
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error('Error al cargar el recibo');
+      console.error('Error al cargar recibo:', error);
+    }
   };
 
   return (
@@ -244,6 +260,7 @@ const DashboardPage: React.FC = () => {
                     <th className="p-3 text-slate-400 dark:text-slate-500 font-bold uppercase text-xs">Fecha</th>
                     <th className="p-3 text-slate-400 dark:text-slate-500 font-bold uppercase text-xs">Detalle</th>
                     <th className="p-3 text-right text-slate-400 dark:text-slate-500 font-bold uppercase text-xs">Total</th>
+                    <th className="p-3 text-center text-slate-400 dark:text-slate-500 font-bold uppercase text-xs">Acción</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
@@ -269,11 +286,21 @@ const DashboardPage: React.FC = () => {
                         <td className="p-3 align-top text-right font-bold text-slate-800 dark:text-slate-200 text-base">
                         S/. {Number(sale.total_amount).toFixed(2)}
                         </td>
+                        <td className="p-3 align-top text-center">
+                        <button
+                            onClick={() => handleViewReceipt(sale.id)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-all active:scale-95 shadow-sm hover:shadow-md"
+                            title="Ver recibo"
+                        >
+                            <ReceiptIcon size={14} />
+                            <span className="hidden sm:inline">Ver Recibo</span>
+                        </button>
+                        </td>
                     </tr>
                     ))}
                     {history.length === 0 && (
                         <tr>
-                            <td colSpan={3} className="p-8 text-center text-slate-400 dark:text-slate-500">
+                            <td colSpan={4} className="p-8 text-center text-slate-400 dark:text-slate-500">
                             No se encontraron movimientos en este rango de fechas.
                             </td>
                         </tr>
@@ -284,6 +311,14 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Recibo */}
+      {currentReceipt && (
+        <Receipt 
+          receipt={currentReceipt} 
+          onClose={() => setCurrentReceipt(null)} 
+        />
+      )}
     </div>
   );
 };

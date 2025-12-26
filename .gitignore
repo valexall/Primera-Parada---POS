@@ -1,34 +1,307 @@
+# ==============================================
+# Dependencies
+# ==============================================
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+**/node_modules/
+jspm_packages/
+bower_components/
+.pnp/
+.pnp.js
+
+# ==============================================
+# Build Output
+# ==============================================
+dist/
+dist-ssr/
+build/
+backend/dist/
+frontend/dist/
+out/
+*.tsbuildinfo
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+.vite/
+
+# ==============================================
 # Logs
-logs
+# ==============================================
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+.pnpm-debug.log*
+log/
+*.log.*
 
-node_modules
-dist
-dist-ssr
+# ==============================================
+# Environment Variables & Secrets
+# ==============================================
+.env
+.env.*
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+*.env.backup
+
+# Secrets and credentials
+*.key
+*.pem
+*.p12
+*.pfx
+*.cer
+*.crt
+secrets/
+credentials/
+.secrets/
+.credentials/
+
+# ==============================================
+# Testing & Coverage
+# ==============================================
+coverage/
+*.lcov
+.nyc_output/
+.jest/
+test-results/
+*.spec.js.snap
+*.spec.ts.snap
+__tests__/__snapshots__/
+junit.xml
+.vitest/
+
+# ==============================================
+# Operating System Files
+# ==============================================
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ==============================================
+# IDEs and Editors
+# ==============================================
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+*.code-workspace
+.history/
+.vscode-test/
+
+# JetBrains IDEs (WebStorm, IntelliJ, etc.)
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea_modules/
+atlassian-ide-plugin.xml
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+.ntvs*
+.njsproj
+.sln
+*.sw?
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+Session.vim
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ==============================================
+# Database & Local Storage
+# ==============================================
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+*.sql.backup
+*.dump
+data/
+db/local/
+backup/
+*.bak
+*.backup
+
+# Supabase local
+.supabase/
+supabase/.branches/
+supabase/.temp/
+
+# ==============================================
+# Temporary Files
+# ==============================================
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.#*
+tmp/
+temp/
+.tmp/
+.temp/
 *.local
 
-# Backend
-backend/dist
-backend/node_modules
+# ==============================================
+# Package Manager Locks (Optional - uncomment if needed)
+# ==============================================
+# Uncomment these if you want to ignore lock files
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
 
-# Environment variables
-.env
-.env.local
-backend/.env
-backend/.env.local
+# ==============================================
+# Optional: npm/yarn/pnpm caches
+# ==============================================
+.npm/
+.yarn/
+.pnp.*
+.yarn-integrity
+.eslintcache
+.node_repl_history
+.yarn-metadata.json
+.pnpm-store/
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# ==============================================
+# TypeScript
+# ==============================================
+*.tsbuildinfo
+.tscache/
+
+# ==============================================
+# Miscellaneous
+# ==============================================
+# Debug files
+*.dmp
+*.stackdump
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# dotenv environment variable files
+.env.backup
+
+# Vercel
+.vercel
+
+# Serverless
+.serverless/
+
+# FuseBox
+.fusebox/
+
+# DynamoDB Local
+.dynamodb/
+
+# TernJS
+.tern-port
+
+# Stores VSCode versions used for testing
+.vscode-test/
+
+# Webpack
+.webpack/
+
+# Optional stylelint cache
+.stylelintcache
+
+# SvelteKit
+.svelte-kit/
+
+# Turbo
+.turbo/
+
+# ==============================================
+# Project Specific
+# ==============================================
+# Add any project-specific patterns here
+reporte.txt
+*.draft
+*.notes
+/uploads/
+/temp-uploads/

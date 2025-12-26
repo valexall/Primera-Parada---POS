@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Order } from '../types';
+import { Order, Receipt as ReceiptType } from '../types';
 import { orderService } from '../services/orderService';
 import { financeService } from '../services/financeService';
+import { receiptService } from '../services/receiptService';
 import { DollarSignIcon, CreditCardIcon, ReceiptIcon, ArrowLeftIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SkeletonCard } from '../components/ui/Loader';
+import Receipt from '../components/ui/Receipt';
 
 const CashierPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -12,6 +14,7 @@ const CashierPage: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<'Efectivo' | 'Yape'>('Efectivo');
   const [needReceipt, setNeedReceipt] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [currentReceipt, setCurrentReceipt] = useState<ReceiptType | null>(null);
   
   // NUEVO ESTADO: Controla si mostramos el panel de cobro en móvil
   const [showMobilePayment, setShowMobilePayment] = useState(false);
@@ -107,26 +110,52 @@ const CashierPage: React.FC = () => {
         }
       });
       
-      await financeService.createSale(
+      const sale = await financeService.createSale(
         selectedOrder.id,
         calculateTotal(selectedOrder),
         paymentMethod,
         needReceipt
       );
       
-      // Cerrar el toast de loading y mostrar éxito
+      // Cerrar el toast de loading
       toast.dismiss(toastId);
-      toast.success('¡Pago registrado exitosamente! 💰', {
-        duration: 2000,
-        style: {
-          padding: '1rem 1.5rem',
-          fontSize: '1rem',
+      
+      // Si se solicitó recibo, obtenerlo y mostrarlo
+      if (needReceipt && sale.id) {
+        try {
+          const receipt = await receiptService.getReceipt(sale.id);
+          setCurrentReceipt(receipt);
+          toast.success('¡Pago registrado! Imprimiendo recibo... 🧾', {
+            duration: 2000,
+            style: {
+              padding: '1rem 1.5rem',
+              fontSize: '1rem',
+            }
+          });
+        } catch (error) {
+          console.error('Error al obtener recibo:', error);
+          toast.success('¡Pago registrado! (Error al generar recibo)', {
+            duration: 2000,
+            style: {
+              padding: '1rem 1.5rem',
+              fontSize: '1rem',
+            }
+          });
         }
-      });
+      } else {
+        toast.success('¡Pago registrado exitosamente! 💰', {
+          duration: 2000,
+          style: {
+            padding: '1rem 1.5rem',
+            fontSize: '1rem',
+          }
+        });
+      }
       
       // Limpiar estado inmediatamente
       setSelectedOrder(null);
       setShowMobilePayment(false);
+      setNeedReceipt(false);
       
       // Recargar órdenes
       await loadOrdersToPay();
@@ -148,7 +177,8 @@ const CashierPage: React.FC = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-6rem)] md:h-[calc(100vh-4rem)] flex flex-col md:flex-row gap-6 relative">
+    <>
+      <div className="h-[calc(100vh-6rem)] md:h-[calc(100vh-4rem)] flex flex-col md:flex-row gap-6 relative">
       
       {/* --- COLUMNA IZQUIERDA: LISTA DE MESAS --- 
           Lógica CSS: Si estamos en modo pago móvil, ocultamos esta columna (hidden), 
@@ -282,6 +312,15 @@ const CashierPage: React.FC = () => {
         )}
       </div>
     </div>
+
+    {/* Modal de Recibo */}
+    {currentReceipt && (
+      <Receipt 
+        receipt={currentReceipt} 
+        onClose={() => setCurrentReceipt(null)} 
+      />
+    )}
+  </>
   );
 };
 
