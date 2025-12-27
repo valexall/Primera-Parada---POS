@@ -20,6 +20,8 @@ export const getOrders = async (req: Request, res: Response) => {
         timestamp: order.timestamp,
         status: order.status,
         tableNumber: order.table_number,
+        orderType: order.order_type || 'Dine-In',
+        customerName: order.customer_name,
         items: (itemsData || []).map(item => ({
           menuItemId: item.menu_item_id,
           menuItemName: item.menu_item_name,
@@ -64,6 +66,8 @@ export const getOrdersByStatus = async (req: Request, res: Response) => {
         timestamp: order.timestamp,
         status: order.status,
         tableNumber: order.table_number,
+        orderType: order.order_type || 'Dine-In',
+        customerName: order.customer_name,
         items: (itemsData || []).map(item => ({
           menuItemId: item.menu_item_id,
           menuItemName: item.menu_item_name,
