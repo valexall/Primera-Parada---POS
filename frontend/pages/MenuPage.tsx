@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, SearchIcon, XIcon, SaveIcon } from 'lucide-react';
+import { PlusIcon, PencilIcon, TrashIcon, SearchIcon, XIcon, SaveIcon, XCircleIcon, CheckCircleIcon } from 'lucide-react';
 import { MenuItem } from '../types';
 import { menuService } from '../services/menuService';
 import toast from 'react-hot-toast';
@@ -84,6 +84,20 @@ const MenuPage: React.FC = () => {
     });
   };
 
+  const handleToggleAvailability = async (item: MenuItem) => {
+    const newAvailability = !item.is_available;
+    const result = await menuService.toggleAvailability(item.id, newAvailability);
+    
+    if (result) {
+      toast.success(newAvailability ? `${item.name} marcado como disponible` : `${item.name} marcado como agotado`, {
+        icon: newAvailability ? '✅' : '❌'
+      });
+      loadMenu();
+    } else {
+      toast.error('Error al actualizar disponibilidad');
+    }
+  };
+
   const filteredItems = menuItems.filter(item => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -131,10 +145,30 @@ const MenuPage: React.FC = () => {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {filteredItems.map(item => (
                 <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors group">
-                  <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-200">{item.name}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-700 dark:text-slate-200">{item.name}</span>
+                      {item.is_available === false && (
+                        <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold rounded-full">
+                          AGOTADO
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-6 py-4 font-mono text-slate-600 dark:text-slate-300">S/. {item.price.toFixed(2)}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => handleToggleAvailability(item)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          item.is_available === false
+                            ? 'text-red-400 dark:text-red-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30'
+                            : 'text-green-400 dark:text-green-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30'
+                        }`}
+                        title={item.is_available === false ? 'Marcar como disponible' : 'Marcar como agotado'}
+                      >
+                        {item.is_available === false ? <CheckCircleIcon size={18} /> : <XCircleIcon size={18} />}
+                      </button>
                       <button onClick={() => openModal(item)} className="p-2 text-slate-400 dark:text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors">
                         <PencilIcon size={18} />
                       </button>

@@ -69,5 +69,17 @@ export const menuService = {
       return [];
     }
   },
-};
 
+  /**
+   * Actualiza la disponibilidad de un item del menú
+   */
+  toggleAvailability: async (id: string, isAvailable: boolean): Promise<MenuItem | null> => {
+    try {
+      const response = await api.put(`/menu/${id}/availability`, { is_available: isAvailable });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating availability:', error);
+      return null;
+    }
+  },
+};

@@ -339,29 +339,62 @@ const OrderPage: React.FC = () => {
               </div>
             </motion.div>
 
-            {filteredItems.map(item => (
-              <motion.div 
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                key={item.id} 
-                className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow cursor-pointer group"
-                onClick={() => addToOrder(item)}
-              >
-                <div className="h-24 bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-900/30 dark:to-amber-900/20 rounded-xl mb-3 flex items-center justify-center text-3xl">
-                  🍽️
-                </div>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100 leading-tight mb-1">{item.name}</h3>
-                    <p className="text-slate-400 dark:text-slate-500 text-xs">Descripción corta...</p>
+            {filteredItems.map(item => {
+              const isUnavailable = item.is_available === false;
+              
+              return (
+                <motion.div 
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  key={item.id} 
+                  className={`bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border transition-all relative overflow-hidden ${
+                    isUnavailable 
+                      ? 'border-red-200 dark:border-red-900/50 opacity-60 cursor-not-allowed' 
+                      : 'border-slate-100 dark:border-slate-700 hover:shadow-md cursor-pointer group'
+                  }`}
+                  onClick={() => !isUnavailable && addToOrder(item)}
+                >
+                  {isUnavailable && (
+                    <div className="absolute top-2 right-2 z-10">
+                      <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                        AGOTADO
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className={`h-24 bg-gradient-to-br rounded-xl mb-3 flex items-center justify-center text-3xl ${
+                    isUnavailable 
+                      ? 'from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-700 grayscale' 
+                      : 'from-orange-100 to-amber-50 dark:from-orange-900/30 dark:to-amber-900/20'
+                  }`}>
+                    {isUnavailable ? '❌' : '🍽️'}
                   </div>
-                  <span className="bg-slate-900 dark:bg-amber-600 text-white text-xs font-bold px-2 py-1 rounded-lg">
-                    S/.{item.price}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
+                  
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className={`font-bold leading-tight mb-1 ${
+                        isUnavailable 
+                          ? 'text-slate-400 dark:text-slate-600 line-through' 
+                          : 'text-slate-800 dark:text-slate-100'
+                      }`}>
+                        {item.name}
+                      </h3>
+                      <p className="text-slate-400 dark:text-slate-500 text-xs">
+                        {isUnavailable ? 'No disponible temporalmente' : 'Descripción corta...'}
+                      </p>
+                    </div>
+                    <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
+                      isUnavailable 
+                        ? 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400' 
+                        : 'bg-slate-900 dark:bg-amber-600 text-white'
+                    }`}>
+                      S/.{item.price}
+                    </span>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </div>

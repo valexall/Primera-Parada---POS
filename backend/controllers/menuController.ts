@@ -183,3 +183,44 @@ export const getDailyStats = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const toggleAvailability = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { is_available } = req.body;
+
+    if (is_available === undefined || is_available === null) {
+      return res.status(400).json({
+        error: 'is_available field is required'
+      });
+    }
+
+    if (typeof is_available !== 'boolean') {
+      return res.status(400).json({
+        error: 'is_available must be a boolean'
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('menu_items')
+      .update({ is_available })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    if (!data) {
+      return res.status(404).json({
+        error: 'Menu item not found'
+      });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error updating menu item availability:', error);
+    res.status(500).json({
+      error: 'Error updating availability'
+    });
+  }
+};

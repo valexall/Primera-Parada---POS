@@ -4,6 +4,7 @@ export interface MenuItem {
   id: string;
   name: string;
   price: number;
+  is_available?: boolean; // TRUE = disponible, FALSE = agotado
 }
 
 export interface OrderItem {

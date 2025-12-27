@@ -274,3 +274,25 @@ CREATE INDEX IF NOT EXISTS idx_orders_type ON orders (order_type);
 -- 6. Comentario
 COMMENT ON COLUMN orders.order_type IS 'Tipo de orden: Dine-In (para comer aquí) o Takeaway (para llevar)';
 COMMENT ON COLUMN orders.customer_name IS 'Nombre del cliente (requerido solo para órdenes Takeaway)';
+
+
+
+
+
+-- =============================================
+-- MIGRACIÓN: Campo de disponibilidad para items del menú
+-- =============================================
+-- Agregar campo para marcar items como agotados
+
+-- 1. Agregar columna is_available (TRUE = disponible, FALSE = agotado)
+ALTER TABLE menu_items 
+ADD COLUMN IF NOT EXISTS is_available BOOLEAN DEFAULT TRUE;
+
+-- 2. Crear índice para consultas rápidas de items disponibles
+CREATE INDEX IF NOT EXISTS idx_menu_items_available ON menu_items(is_available);
+
+-- 3. Actualizar items existentes como disponibles
+UPDATE menu_items SET is_available = TRUE WHERE is_available IS NULL;
+
+-- 4. Comentario de documentación
+COMMENT ON COLUMN menu_items.is_available IS 'Indica si el item está disponible (TRUE) o agotado (FALSE)';
