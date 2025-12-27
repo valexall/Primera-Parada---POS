@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
+import { randomUUID } from 'crypto';
+
 export const getOrders = async (req: Request, res: Response) => {
   try {
     const {
@@ -143,15 +145,22 @@ export const createOrder = async (req: Request, res: Response) => {
       .select()
       .single();
     if (orderError) throw orderError;
+    
     // Insert order items
-    const orderItems = items.map((item: any) => ({
-      order_id: orderId,
-      menu_item_id: item.menuItemId,
-      menu_item_name: item.menuItemName,
-      price: item.price,
-      quantity: item.quantity,
-      notes: item.notes || null
-    }));
+    // Para items personalizados (CUSTOM-*), generamos un UUID válido automáticamente
+    const orderItems = items.map((item: any) => {
+      const isCustomItem = item.menuItemId && item.menuItemId.toString().startsWith('CUSTOM-');
+      
+      return {
+        order_id: orderId,
+        menu_item_id: isCustomItem ? randomUUID() : item.menuItemId,
+        menu_item_name: item.menuItemName,
+        price: item.price,
+        quantity: item.quantity,
+        notes: item.notes || null
+      };
+    });
+    
     const {
       error: itemsError
     } = await supabase.from('order_items').insert(orderItems);
@@ -295,14 +304,18 @@ export const updateOrderItems = async (req: Request, res: Response) => {
     if (deleteError) throw deleteError;
 
     // Insertar los nuevos items
-    const orderItems = items.map((item: any) => ({
-      order_id: id,
-      menu_item_id: item.menuItemId,
-      menu_item_name: item.menuItemName,
-      price: item.price,
-      quantity: item.quantity,
-      notes: item.notes || null
-    }));
+    const orderItems = items.map((item: any) => {
+      const isCustomItem = item.menuItemId && item.menuItemId.toString().startsWith('CUSTOM-');
+      
+      return {
+        order_id: id,
+        menu_item_id: isCustomItem ? randomUUID() : item.menuItemId,
+        menu_item_name: item.menuItemName,
+        price: item.price,
+        quantity: item.quantity,
+        notes: item.notes || null
+      };
+    });
 
     const { error: itemsError } = await supabase
       .from('order_items')

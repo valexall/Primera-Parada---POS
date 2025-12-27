@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { PlusIcon, MinusIcon, Trash2Icon, ShoppingBagIcon, ChevronRightIcon, XIcon, ChevronDownIcon, UtensilsIcon, PackageIcon } from 'lucide-react';
+import { PlusIcon, MinusIcon, Trash2Icon, ShoppingBagIcon, ChevronRightIcon, XIcon, ChevronDownIcon, UtensilsIcon, PackageIcon, ZapIcon } from 'lucide-react';
 import { MenuItem, OrderItem } from '../types';
 import { menuService } from '../services/menuService';
 import { orderService } from '../services/orderService';
@@ -18,6 +18,12 @@ const OrderPage: React.FC = () => {
   // ESTADO NUEVO: Controlar la vista del carrito en celular
   const [showMobileCart, setShowMobileCart] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Estados para item personalizado
+  const [showCustomItemModal, setShowCustomItemModal] = useState(false);
+  const [customItemName, setCustomItemName] = useState('');
+  const [customItemPrice, setCustomItemPrice] = useState('');
+  const [addToMenu, setAddToMenu] = useState(false);
 
   const TABLES = ['1', '2', '3', '4', '5', '6', 'Barra 1', 'Delivery'];
   const CATEGORIES = ['Todos', 'Entradas', 'Fondos', 'Bebidas', 'Postres', 'Extras'];
@@ -60,6 +66,64 @@ const OrderPage: React.FC = () => {
   };
 
   const calculateTotal = () => orderItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+
+  const handleAddCustomItem = async () => {
+    if (!customItemName.trim()) {
+      return toast.error('Ingresa el nombre del plato');
+    }
+    
+    const price = parseFloat(customItemPrice);
+    if (isNaN(price) || price <= 0) {
+      return toast.error('Ingresa un precio válido');
+    }
+
+    try {
+      let menuItemId = `CUSTOM-${Date.now()}`;
+      
+      // Si se marcó "Agregar al menú", crear el item en menu_items
+      if (addToMenu) {
+        const newMenuItem = await menuService.create({
+          name: customItemName,
+          price: price
+        });
+        
+        if (!newMenuItem) {
+          throw new Error('No se pudo crear el item en el menú');
+        }
+        
+        menuItemId = newMenuItem.id;
+        await loadMenu(); // Recargar el menú para mostrar el nuevo item
+        toast.success(`${customItemName} agregado al menú permanentemente`, { 
+          icon: '📋',
+          position: 'bottom-center',
+          style: { borderRadius: '20px', background: '#333', color: '#fff'}
+        });
+      }
+      
+      // Agregar al pedido actual
+      setOrderItems([...orderItems, {
+        menuItemId: menuItemId,
+        menuItemName: customItemName,
+        price: price,
+        quantity: 1
+      }]);
+
+      toast.success(`${customItemName} agregado al pedido`, { 
+        icon: '⚡', 
+        position: 'bottom-center', 
+        style: { borderRadius: '20px', background: '#333', color: '#fff'} 
+      });
+
+      // Limpiar y cerrar modal
+      setCustomItemName('');
+      setCustomItemPrice('');
+      setAddToMenu(false);
+      setShowCustomItemModal(false);
+    } catch (error) {
+      toast.error('Error al crear el item');
+      console.error(error);
+    }
+  };
 
   const handleSubmit = async () => {
     if (orderType === 'Dine-In' && !selectedTable) {
@@ -254,6 +318,27 @@ const OrderPage: React.FC = () => {
         {/* Grid de Platos */}
         <div className="flex-1 overflow-y-auto pb-24 lg:pb-0 pr-2 custom-scrollbar">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {/* Botón de Item Personalizado */}
+            <motion.div 
+              layout
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-2xl border-2 border-dashed border-blue-300 dark:border-blue-700 hover:border-blue-500 dark:hover:border-blue-500 transition-all cursor-pointer group"
+              onClick={() => setShowCustomItemModal(true)}
+            >
+              <div className="h-24 bg-blue-100 dark:bg-blue-900/30 rounded-xl mb-3 flex items-center justify-center">
+                <ZapIcon size={40} className="text-blue-500 dark:text-blue-400 group-hover:scale-110 transition-transform" />
+              </div>
+              <div className="text-center">
+                <h3 className="font-bold text-blue-700 dark:text-blue-300 leading-tight mb-1">
+                  Item Rápido
+                </h3>
+                <p className="text-blue-600 dark:text-blue-400 text-xs">
+                  Agregar plato personalizado
+                </p>
+              </div>
+            </motion.div>
+
             {filteredItems.map(item => (
               <motion.div 
                 layout
@@ -320,6 +405,126 @@ const OrderPage: React.FC = () => {
               className="lg:hidden fixed bottom-0 left-0 right-0 h-[85vh] bg-white dark:bg-slate-800 rounded-t-3xl shadow-2xl z-50 overflow-hidden flex flex-col"
             >
               <CartContent />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* --- MODAL: ITEM RÁPIDO PERSONALIZADO --- */}
+      <AnimatePresence>
+        {showCustomItemModal && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setShowCustomItemModal(false);
+                setCustomItemName('');
+                setCustomItemPrice('');
+                setAddToMenu(false);
+              }}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            >
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                exit={{ opacity: 0, scale: 0.9 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-md"
+              >
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <ZapIcon size={24} className="text-blue-500" />
+                    Item Rápido
+                  </h3>
+                  <button 
+                    onClick={() => {
+                      setShowCustomItemModal(false);
+                      setCustomItemName('');
+                      setCustomItemPrice('');
+                      setAddToMenu(false);
+                    }}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Nombre del plato
+                    </label>
+                    <input 
+                      type="text"
+                      value={customItemName}
+                      onChange={(e) => setCustomItemName(e.target.value)}
+                      placeholder="Ej: Pizza especial, Jugo de naranja..."
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Precio (S/.)
+                    </label>
+                    <input 
+                      type="number"
+                      value={customItemPrice}
+                      onChange={(e) => setCustomItemPrice(e.target.value)}
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                    <input 
+                      type="checkbox"
+                      id="addToMenu"
+                      checked={addToMenu}
+                      onChange={(e) => setAddToMenu(e.target.checked)}
+                      className="w-5 h-5 text-blue-600 bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
+                    />
+                    <label 
+                      htmlFor="addToMenu" 
+                      className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer flex-1"
+                    >
+                      📋 Agregar al menú permanentemente
+                      <span className="block text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Este plato aparecerá en el menú para futuros pedidos
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button 
+                    onClick={() => {
+                      setShowCustomItemModal(false);
+                      setCustomItemName('');
+                      setCustomItemPrice('');
+                      setAddToMenu(false);
+                    }}
+                    className="flex-1 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={handleAddCustomItem}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-bold hover:from-blue-600 hover:to-indigo-600 transition-all shadow-lg shadow-blue-500/30"
+                  >
+                    Agregar
+                  </button>
+                </div>
+              </div>
+            </motion.div>
             </motion.div>
           </>
         )}
