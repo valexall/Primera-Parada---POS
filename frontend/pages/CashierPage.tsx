@@ -278,6 +278,31 @@ const CashierPage: React.FC = () => {
                 )}
                 <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">#{order.id.slice(-4)}</span>
               </div>
+              
+              {/* Vista previa de items */}
+              <div className="my-3 space-y-1.5 border-t border-slate-200 dark:border-slate-700 pt-3">
+                {order.items.slice(0, 3).map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center text-sm">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${selectedOrder?.id === order.id ? 'bg-amber-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>
+                        {item.quantity}
+                      </span>
+                      <span className="text-slate-700 dark:text-slate-300 font-medium truncate">
+                        {item.menuItemName}
+                      </span>
+                    </div>
+                    <span className="text-slate-600 dark:text-slate-400 font-semibold ml-2 flex-shrink-0">
+                      S/. {(item.price * item.quantity).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+                {order.items.length > 3 && (
+                  <div className="text-xs text-slate-500 dark:text-slate-400 italic pt-1">
+                    +{order.items.length - 3} item{order.items.length - 3 !== 1 ? 's' : ''} más...
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-between items-end">
                 <div className="text-xs text-slate-500 dark:text-slate-400">
                   {new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
