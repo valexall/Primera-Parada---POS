@@ -1,14 +1,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { ClockIcon, CheckCircleIcon, SoupIcon, BellIcon } from 'lucide-react';
-import { Order, OrderStatus } from '../types';
+import { ClockIcon, CheckCircleIcon, SoupIcon, BellIcon, EditIcon } from 'lucide-react';
+import { Order, OrderStatus, OrderItem } from '../types';
 import { orderService } from '../services/orderService';
 import { supabaseClient } from '../services/supabaseClient';
-import { SkeletonCard } from '../components/ui/Loader'; // <--- Skeletons
+import { SkeletonCard } from '../components/ui/Loader';
+import EditOrderModal from '../components/ui/EditOrderModal';
+import toast from 'react-hot-toast';
 
 const KitchenPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<OrderStatus | 'Todos'>('Todos');
-  const [isLoading, setIsLoading] = useState(true); // Estado de carga inicial
+  const [isLoading, setIsLoading] = useState(true);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
   const loadOrders = useCallback(async (isInitial = false) => {
     if (isInitial) setIsLoading(true);
@@ -48,6 +51,15 @@ const KitchenPage: React.FC = () => {
     setOrders(current => current.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     await orderService.updateStatus(orderId, newStatus);
     loadOrders(false);
+  };
+
+  const handleUpdateOrder = async (orderId: string, items: OrderItem[]) => {
+    try {
+      await orderService.updateItems(orderId, items);
+      await loadOrders(false);
+    } catch (error) {
+      throw error;
+    }
   };
 
   const getCardStyle = (status: OrderStatus) => {
@@ -136,12 +148,20 @@ const KitchenPage: React.FC = () => {
 
             <div className="flex gap-3 mt-auto">
               {order.status === 'Pendiente' && (
-                <button 
-                  onClick={() => handleStatusChange(order.id, 'Listo')}
-                  className="flex-1 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-200 transition-transform active:scale-95"
-                >
-                  <CheckCircleIcon size={20} /> LISTO PARA SERVIR
-                </button>
+                <>
+                  <button 
+                    onClick={() => setEditingOrder(order)}
+                    className="px-4 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-200 transition-transform active:scale-95"
+                  >
+                    <EditIcon size={18} />
+                  </button>
+                  <button 
+                    onClick={() => handleStatusChange(order.id, 'Listo')}
+                    className="flex-1 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-200 transition-transform active:scale-95"
+                  >
+                    <CheckCircleIcon size={20} /> LISTO PARA SERVIR
+                  </button>
+                </>
               )}
               {order.status === 'Listo' && (
                 <button 
@@ -162,6 +182,14 @@ const KitchenPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal de Edición */}
+      <EditOrderModal
+        order={editingOrder!}
+        isOpen={!!editingOrder}
+        onClose={() => setEditingOrder(null)}
+        onSave={handleUpdateOrder}
+      />
     </div>
   );
 };

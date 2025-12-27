@@ -57,5 +57,18 @@ export const orderService = {
       return null;
     }
   },
+
+  /**
+   * Actualiza los items de un pedido
+   */
+  updateItems: async (id: string, items: OrderItem[]): Promise<Order> => {
+    try {
+      const response = await api.put(`/orders/${id}/items`, { items });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating order items:', error);
+      throw error;
+    }
+  },
 };
 

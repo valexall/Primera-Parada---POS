@@ -1,5 +1,5 @@
 import express from 'express';
-import { getOrders, getOrdersByStatus, createOrder, updateOrderStatus } from '../controllers/orderController';
+import { getOrders, getOrdersByStatus, createOrder, updateOrderStatus, updateOrderItems } from '../controllers/orderController';
 import { verifyToken } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -11,5 +11,6 @@ router.get('/', getOrders);
 router.get('/status/:status', getOrdersByStatus);
 router.post('/', createOrder);
 router.put('/:id/status', updateOrderStatus);
+router.put('/:id/items', updateOrderItems);
 
 export default router;

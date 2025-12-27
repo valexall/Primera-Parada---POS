@@ -212,3 +212,110 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const updateOrderItems = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { items } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Order ID is required' });
+    }
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Items requeridos' });
+    }
+
+    // Validar que la orden existe y no está pagada
+    const { data: orderData, error: orderError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (orderError || !orderData) {
+      return res.status(404).json({ error: 'Orden no encontrada' });
+    }
+
+    if (orderData.status === 'Pagado') {
+      return res.status(400).json({ error: 'No se puede editar una orden ya pagada' });
+    }
+
+    // Validar cada item
+    for (const item of items) {
+      if (!item.menuItemId || !item.menuItemName || item.price === undefined || item.quantity === undefined) {
+        return res.status(400).json({
+          error: 'Cada item debe tener menuItemId, menuItemName, price y quantity'
+        });
+      }
+      if (typeof item.price !== 'number' || item.price <= 0) {
+        return res.status(400).json({
+          error: 'El precio debe ser un número positivo'
+        });
+      }
+      if (typeof item.quantity !== 'number' || item.quantity <= 0 || !Number.isInteger(item.quantity)) {
+        return res.status(400).json({
+          error: 'La cantidad debe ser un entero positivo'
+        });
+      }
+    }
+
+    // Eliminar todos los items actuales de la orden
+    const { error: deleteError } = await supabase
+      .from('order_items')
+      .delete()
+      .eq('order_id', id);
+
+    if (deleteError) throw deleteError;
+
+    // Insertar los nuevos items
+    const orderItems = items.map((item: any) => ({
+      order_id: id,
+      menu_item_id: item.menuItemId,
+      menu_item_name: item.menuItemName,
+      price: item.price,
+      quantity: item.quantity,
+      notes: item.notes || null
+    }));
+
+    const { error: itemsError } = await supabase
+      .from('order_items')
+      .insert(orderItems);
+
+    if (itemsError) throw itemsError;
+
+    // Actualizar timestamp de la orden
+    const timestamp = Date.now();
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({ timestamp })
+      .eq('id', id);
+
+    if (updateError) throw updateError;
+
+    // Retornar la orden actualizada
+    const { data: updatedItems } = await supabase
+      .from('order_items')
+      .select('*')
+      .eq('order_id', id);
+
+    res.json({
+      id,
+      timestamp,
+      status: orderData.status,
+      tableNumber: orderData.table_number,
+      items: (updatedItems || []).map(item => ({
+        menuItemId: item.menu_item_id,
+        menuItemName: item.menu_item_name,
+        price: item.price,
+        quantity: item.quantity,
+        notes: item.notes
+      }))
+    });
+  } catch (error) {
+    console.error('Error updating order items:', error);
+    res.status(500).json({
+      error: 'Error al actualizar los items de la orden'
+    });
+  }
+};
