@@ -1,10 +1,16 @@
 import api from './api';
-import { Expense, DailySummary, Sale } from '../types';
+import { Expense, DailySummary, Sale, PartialSaleRequest } from '../types';
 
 export const financeService = {
   // Ventas
   createSale: async (orderId: string, amount: number, paymentMethod: string, isReceiptIssued: boolean) => {
     const response = await api.post('/sales', { orderId, amount, paymentMethod, isReceiptIssued });
+    return response.data;
+  },
+
+  // Ventas parciales
+  createPartialSale: async (request: PartialSaleRequest) => {
+    const response = await api.post('/sales/partial', request);
     return response.data;
   },
 

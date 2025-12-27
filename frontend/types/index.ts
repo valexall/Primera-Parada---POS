@@ -41,6 +41,18 @@ export interface Sale {
   };
 }
 
+export interface SelectedItem {
+  menuItemId: string;
+  quantity: number;
+}
+
+export interface PartialSaleRequest {
+  orderId: string;
+  paymentMethod: 'Efectivo' | 'Yape';
+  isReceiptIssued?: boolean;
+  selectedItems: SelectedItem[];
+}
+
 export interface Receipt {
   id: string;
   saleId: string;

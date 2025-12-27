@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Order, Receipt as ReceiptType } from '../types';
+import { Order, Receipt as ReceiptType, SelectedItem } from '../types';
 import { orderService } from '../services/orderService';
 import { financeService } from '../services/financeService';
 import { receiptService } from '../services/receiptService';
-import { DollarSignIcon, CreditCardIcon, ReceiptIcon, ArrowLeftIcon } from 'lucide-react';
+import { DollarSignIcon, CreditCardIcon, ReceiptIcon, ArrowLeftIcon, CheckCircle2Icon, CircleIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SkeletonCard } from '../components/ui/Loader';
 import Receipt from '../components/ui/Receipt';
@@ -18,6 +18,10 @@ const CashierPage: React.FC = () => {
   
   // NUEVO ESTADO: Controla si mostramos el panel de cobro en móvil
   const [showMobilePayment, setShowMobilePayment] = useState(false);
+  
+  // NUEVO ESTADO: Items seleccionados para cobro parcial
+  const [selectedItems, setSelectedItems] = useState<Map<string, number>>(new Map());
+  const [isPartialPayment, setIsPartialPayment] = useState(false);
 
   useEffect(() => {
     loadOrdersToPay();
@@ -41,25 +45,85 @@ const CashierPage: React.FC = () => {
   const handleSelectOrder = (order: Order) => {
     setSelectedOrder(order);
     setShowMobilePayment(true); // En móvil, pasamos a la vista de pago
+    // Resetear selección de items
+    setSelectedItems(new Map());
+    setIsPartialPayment(false);
   };
 
   const calculateTotal = (order: Order) => {
     return order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
+  const calculateSelectedTotal = () => {
+    if (!selectedOrder || !isPartialPayment) {
+      return selectedOrder ? calculateTotal(selectedOrder) : 0;
+    }
+
+    let total = 0;
+    selectedOrder.items.forEach(item => {
+      const selectedQty = selectedItems.get(item.menuItemId) || 0;
+      if (selectedQty > 0) {
+        total += item.price * selectedQty;
+      }
+    });
+    return total;
+  };
+
+  const toggleItemSelection = (menuItemId: string, maxQuantity: number) => {
+    setSelectedItems(prev => {
+      const newMap = new Map(prev);
+      const currentQty = newMap.get(menuItemId) || 0;
+      
+      if (currentQty === 0) {
+        // Seleccionar con cantidad 1
+        newMap.set(menuItemId, 1);
+      } else if (currentQty < maxQuantity) {
+        // Incrementar cantidad
+        newMap.set(menuItemId, currentQty + 1);
+      } else {
+        // Deseleccionar
+        newMap.delete(menuItemId);
+      }
+      
+      return newMap;
+    });
+  };
+
+  const hasSelectedItems = () => {
+    return Array.from(selectedItems.values()).some(qty => qty > 0);
+  };
+
   const handleProcessPayment = () => {
     if (!selectedOrder) return;
 
-    const total = calculateTotal(selectedOrder).toFixed(2);
+    // Validar si es pago parcial y no hay items seleccionados
+    if (isPartialPayment && !hasSelectedItems()) {
+      toast.error('Selecciona al menos un item para cobrar', {
+        duration: 3000,
+        style: {
+          padding: '1rem 1.5rem',
+          fontSize: '1rem',
+        }
+      });
+      return;
+    }
+
+    const total = calculateSelectedTotal().toFixed(2);
+    const paymentType = isPartialPayment ? 'Parcial' : 'Completo';
 
     toast((t) => (
       <div className="flex flex-col gap-4 w-full max-w-md mx-auto p-2">
         <div className="text-center px-2">
-          <p className="font-bold text-slate-800 text-lg sm:text-xl mb-2">Confirmar Cobro</p>
+          <p className="font-bold text-slate-800 text-lg sm:text-xl mb-2">Confirmar Cobro {paymentType}</p>
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
             ¿Cobrar <span className="font-bold text-slate-900 text-lg">S/. {total}</span> con{' '}
             <span className="font-bold text-amber-600">{paymentMethod}</span>?
           </p>
+          {isPartialPayment && (
+            <p className="text-xs text-slate-500 mt-2">
+              ({Array.from(selectedItems.values()).reduce((a, b) => a + b, 0)} items seleccionados)
+            </p>
+          )}
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3 mt-2">
@@ -110,12 +174,33 @@ const CashierPage: React.FC = () => {
         }
       });
       
-      const sale = await financeService.createSale(
-        selectedOrder.id,
-        calculateTotal(selectedOrder),
-        paymentMethod,
-        needReceipt
-      );
+      let sale;
+      
+      if (isPartialPayment && hasSelectedItems()) {
+        // Preparar items seleccionados para el backend
+        const selectedItemsArray: SelectedItem[] = [];
+        selectedItems.forEach((quantity, menuItemId) => {
+          if (quantity > 0) {
+            selectedItemsArray.push({ menuItemId, quantity });
+          }
+        });
+
+        // Crear venta parcial
+        sale = await financeService.createPartialSale({
+          orderId: selectedOrder.id,
+          paymentMethod,
+          isReceiptIssued: needReceipt,
+          selectedItems: selectedItemsArray
+        });
+      } else {
+        // Crear venta completa (original)
+        sale = await financeService.createSale(
+          selectedOrder.id,
+          calculateTotal(selectedOrder),
+          paymentMethod,
+          needReceipt
+        );
+      }
       
       // Cerrar el toast de loading
       toast.dismiss(toastId);
@@ -143,7 +228,10 @@ const CashierPage: React.FC = () => {
           });
         }
       } else {
-        toast.success('¡Pago registrado exitosamente! 💰', {
+        const message = isPartialPayment 
+          ? '¡Pago parcial registrado! 💰' 
+          : '¡Pago registrado exitosamente! 💰';
+        toast.success(message, {
           duration: 2000,
           style: {
             padding: '1rem 1.5rem',
@@ -156,6 +244,8 @@ const CashierPage: React.FC = () => {
       setSelectedOrder(null);
       setShowMobilePayment(false);
       setNeedReceipt(false);
+      setSelectedItems(new Map());
+      setIsPartialPayment(false);
       
       // Recargar órdenes
       await loadOrdersToPay();
@@ -246,24 +336,92 @@ const CashierPage: React.FC = () => {
               </button>
 
               <div className="pl-14 md:pl-0">
-                <h2 className="text-xs sm:text-sm font-bold text-slate-400 dark:text-amber-100 uppercase tracking-wider mb-1">Total a Cobrar</h2>
-                <div className="text-3xl sm:text-4xl font-bold">S/. {calculateTotal(selectedOrder).toFixed(2)}</div>
-                <div className="text-sm text-slate-400 dark:text-amber-100 mt-2">Mesa {selectedOrder.tableNumber} • {selectedOrder.items.length} items</div>
+                <h2 className="text-xs sm:text-sm font-bold text-slate-400 dark:text-amber-100 uppercase tracking-wider mb-1">
+                  {isPartialPayment ? 'Total Seleccionado' : 'Total a Cobrar'}
+                </h2>
+                <div className="text-3xl sm:text-4xl font-bold">S/. {calculateSelectedTotal().toFixed(2)}</div>
+                <div className="text-sm text-slate-400 dark:text-amber-100 mt-2">
+                  Mesa {selectedOrder.tableNumber} • {isPartialPayment 
+                    ? `${Array.from(selectedItems.values()).reduce((a, b) => a + b, 0)} items seleccionados` 
+                    : `${selectedOrder.items.length} items`}
+                </div>
               </div>
             </div>
 
             <div className="p-5 sm:p-6 flex-1 overflow-y-auto">
+              {/* Toggle para Pago Parcial */}
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={isPartialPayment} 
+                    onChange={(e) => {
+                      setIsPartialPayment(e.target.checked);
+                      if (!e.target.checked) {
+                        setSelectedItems(new Map());
+                      }
+                    }} 
+                    className="w-5 h-5 accent-blue-500"
+                  />
+                  <div>
+                    <span className="text-sm font-bold text-blue-700 dark:text-blue-300">Cobro Por Separado</span>
+                    <p className="text-xs text-blue-600 dark:text-blue-400">Selecciona items individuales para cobrar</p>
+                  </div>
+                </label>
+              </div>
+
               <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-3 text-sm uppercase">Detalle</h3>
               <ul className="space-y-3 mb-6">
-                {selectedOrder.items.map((item, idx) => (
-                  <li key={idx} className="flex justify-between text-sm items-center border-b border-slate-50 dark:border-slate-700 pb-2 last:border-0">
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold text-slate-500 dark:text-slate-400 w-5">{item.quantity}x</span>
-                      <span className="text-slate-700 dark:text-slate-300 font-medium">{item.menuItemName}</span>
-                    </div>
-                    <span className="text-slate-900 dark:text-slate-100 font-bold">S/. {(item.price * item.quantity).toFixed(2)}</span>
-                  </li>
-                ))}
+                {selectedOrder.items.map((item, idx) => {
+                  const selectedQty = selectedItems.get(item.menuItemId) || 0;
+                  const isSelected = selectedQty > 0;
+                  
+                  return (
+                    <li 
+                      key={idx} 
+                      className={`flex justify-between text-sm items-center border-b pb-2 last:border-0 transition-all ${
+                        isPartialPayment 
+                          ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 p-2 rounded-lg -mx-2' 
+                          : ''
+                      } ${
+                        isSelected 
+                          ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+                          : 'border-slate-50 dark:border-slate-700'
+                      }`}
+                      onClick={() => isPartialPayment && toggleItemSelection(item.menuItemId, item.quantity)}
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        {isPartialPayment && (
+                          <div className="shrink-0">
+                            {isSelected ? (
+                              <CheckCircle2Icon size={20} className="text-green-600" />
+                            ) : (
+                              <CircleIcon size={20} className="text-slate-300" />
+                            )}
+                          </div>
+                        )}
+                        <div className="flex flex-col flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-500 dark:text-slate-400">
+                              {isPartialPayment && isSelected ? `${selectedQty}/` : ''}{item.quantity}x
+                            </span>
+                            <span className="text-slate-700 dark:text-slate-300 font-medium">{item.menuItemName}</span>
+                          </div>
+                          {isPartialPayment && isSelected && selectedQty < item.quantity && (
+                            <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">
+                              Toca para seleccionar más
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <span className={`font-bold ${isSelected ? 'text-green-700 dark:text-green-400' : 'text-slate-900 dark:text-slate-100'}`}>
+                        S/. {isPartialPayment && isSelected 
+                          ? (item.price * selectedQty).toFixed(2) 
+                          : (item.price * item.quantity).toFixed(2)}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
 
               <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-3 text-sm uppercase">Método de Pago</h3>
