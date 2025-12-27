@@ -75,5 +75,17 @@ export const orderService = {
       throw error;
     }
   },
+
+  /**
+   * Elimina un pedido
+   */
+  delete: async (id: string): Promise<void> => {
+    try {
+      await api.delete(`/orders/${id}`);
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      throw error;
+    }
+  },
 };
 

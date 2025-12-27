@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { ClockIcon, CheckCircleIcon, SoupIcon, BellIcon, EditIcon, UtensilsIcon, PackageIcon } from 'lucide-react';
+import { ClockIcon, CheckCircleIcon, SoupIcon, BellIcon, EditIcon, UtensilsIcon, PackageIcon, XIcon, AlertTriangleIcon } from 'lucide-react';
 import { Order, OrderStatus, OrderItem } from '../types';
 import { orderService } from '../services/orderService';
 import { supabaseClient } from '../services/supabaseClient';
@@ -12,6 +12,7 @@ const KitchenPage: React.FC = () => {
   const [filter, setFilter] = useState<OrderStatus | 'Todos'>('Todos');
   const [isLoading, setIsLoading] = useState(true);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
 
   const loadOrders = useCallback(async (isInitial = false) => {
     if (isInitial) setIsLoading(true);
@@ -59,6 +60,27 @@ const KitchenPage: React.FC = () => {
       await loadOrders(false);
     } catch (error) {
       throw error;
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    try {
+      // Optimistic Update: Remover de la UI antes que el servidor
+      setOrders(current => current.filter(o => o.id !== orderId));
+      setDeletingOrderId(null);
+      
+      await orderService.delete(orderId);
+      
+      toast.success('Pedido cancelado exitosamente', {
+        icon: '🗑️',
+        duration: 2000,
+      });
+      
+      await loadOrders(false);
+    } catch (error: any) {
+      // Revertir en caso de error
+      await loadOrders(false);
+      toast.error(error.response?.data?.error || 'Error al cancelar el pedido');
     }
   };
 
@@ -167,14 +189,22 @@ const KitchenPage: React.FC = () => {
               {order.status === 'Pendiente' && (
                 <>
                   <button 
+                    onClick={() => setDeletingOrderId(order.id)}
+                    className="px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-200 dark:shadow-red-900/50 transition-transform active:scale-95"
+                    title="Cancelar pedido"
+                  >
+                    <XIcon size={18} />
+                  </button>
+                  <button 
                     onClick={() => setEditingOrder(order)}
-                    className="px-4 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-200 transition-transform active:scale-95"
+                    className="px-4 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-200 dark:shadow-blue-900/50 transition-transform active:scale-95"
+                    title="Editar pedido"
                   >
                     <EditIcon size={18} />
                   </button>
                   <button 
                     onClick={() => handleStatusChange(order.id, 'Listo')}
-                    className="flex-1 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-200 transition-transform active:scale-95"
+                    className="flex-1 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-200 dark:shadow-green-900/50 transition-transform active:scale-95"
                   >
                     <CheckCircleIcon size={20} /> LISTO PARA SERVIR
                   </button>
@@ -207,6 +237,40 @@ const KitchenPage: React.FC = () => {
         onClose={() => setEditingOrder(null)}
         onSave={handleUpdateOrder}
       />
+
+      {/* Modal de Confirmación de Eliminación */}
+      {deletingOrderId && (
+        <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6 relative animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full mx-auto mb-4">
+              <AlertTriangleIcon size={32} className="text-red-600 dark:text-red-400" />
+            </div>
+            
+            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2 text-center">
+              ¿Cancelar este pedido?
+            </h2>
+            
+            <p className="text-slate-600 dark:text-slate-400 text-center mb-6">
+              Esta acción no se puede deshacer. El pedido será eliminado permanentemente.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletingOrderId(null)}
+                className="flex-1 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              >
+                No, mantener
+              </button>
+              <button
+                onClick={() => handleDeleteOrder(deletingOrderId)}
+                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-200 dark:shadow-red-900/50"
+              >
+                Sí, cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

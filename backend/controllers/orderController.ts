@@ -329,3 +329,50 @@ export const updateOrderItems = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const deleteOrder = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Order ID es requerido' });
+    }
+
+    // Verificar que la orden existe y su estado
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('id, status')
+      .eq('id', id)
+      .single();
+
+    if (orderError || !order) {
+      return res.status(404).json({ error: 'Orden no encontrada' });
+    }
+
+    // Solo permitir eliminar órdenes que no han sido entregadas
+    if (order.status === 'Entregado') {
+      return res.status(400).json({ error: 'No se puede eliminar una orden ya entregada' });
+    }
+
+    // Eliminar items de la orden primero (por foreign key constraint)
+    const { error: deleteItemsError } = await supabase
+      .from('order_items')
+      .delete()
+      .eq('order_id', id);
+
+    if (deleteItemsError) throw deleteItemsError;
+
+    // Eliminar la orden
+    const { error: deleteOrderError } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', id);
+
+    if (deleteOrderError) throw deleteOrderError;
+
+    res.json({ message: 'Orden eliminada exitosamente' });
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    res.status(500).json({ error: 'Error eliminando la orden' });
+  }
+};
