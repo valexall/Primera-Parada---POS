@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   MenuIcon, ClipboardIcon, ChefHatIcon, DollarSignIcon, 
   PieChartIcon, PackageIcon, LogOutIcon, UsersIcon, LayoutGridIcon, XIcon,
-  MoonIcon, SunIcon, HistoryIcon
+  MoonIcon, SunIcon, HistoryIcon, BarChart3Icon
 } from 'lucide-react';
 import { ROUTES } from '../../constants/routes';
 import { useAuth } from '../../context/AuthContext';
@@ -68,6 +68,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </Link>
           <Link to={ROUTES.USERS} className={getLinkClass(ROUTES.USERS)} onClick={() => setIsMobileMenuOpen(false)}>
             <UsersIcon size={20} /> Usuarios
+          </Link>
+          <Link to={ROUTES.MENU_HISTORY} className={getLinkClass(ROUTES.MENU_HISTORY)} onClick={() => setIsMobileMenuOpen(false)}>
+            <BarChart3Icon size={20} /> Historial Menús
           </Link>
         </>
       )}

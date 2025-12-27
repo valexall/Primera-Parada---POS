@@ -127,3 +127,57 @@ export interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
 }
+
+// Menu History Types for Business Intelligence
+export interface MenuItemSalesStats {
+  menu_item_id: string;
+  name: string;
+  price: number;
+  quantity_sold: number;
+  revenue: number;
+  times_ordered: number;
+}
+
+export interface MenuHistorySnapshot {
+  id: string;
+  snapshot_date: string; // YYYY-MM-DD
+  menu_items: MenuItem[];
+  sales_stats: MenuItemSalesStats[];
+  total_revenue: number;
+  total_orders: number;
+  total_items_sold: number;
+  dine_in_orders: number;
+  takeaway_orders: number;
+  avg_order_value: number;
+  peak_hour: number | null; // 0-23
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MenuHistoryPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface MenuHistoryResponse {
+  data: MenuHistorySnapshot[];
+  pagination: MenuHistoryPagination;
+}
+
+export interface TopSellingItem {
+  menu_item_id: string;
+  name: string;
+  total_quantity: number;
+  total_revenue: number;
+  times_ordered: number;
+}
+
+export interface RevenueTrend {
+  snapshot_date: string;
+  total_revenue: number;
+  total_orders: number;
+  avg_order_value: number;
+}

@@ -10,6 +10,7 @@ export const ROUTES = {
   INVENTORY: '/inventory',
   USERS: '/users',
   HISTORY: '/history',
+  MENU_HISTORY: '/menu-history',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

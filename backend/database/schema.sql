@@ -296,3 +296,74 @@ UPDATE menu_items SET is_available = TRUE WHERE is_available IS NULL;
 
 -- 4. Comentario de documentación
 COMMENT ON COLUMN menu_items.is_available IS 'Indica si el item está disponible (TRUE) o agotado (FALSE)';
+
+
+
+
+
+
+--=============================================
+-- Migration: Add menu_history table for Business Intelligence
+-- Purpose: Store daily menu snapshots with sales statistics for analysis
+-- Created: 2025-12-27
+--=============================================
+
+-- Create menu_history table
+CREATE TABLE IF NOT EXISTS menu_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  snapshot_date DATE NOT NULL UNIQUE,
+  
+  -- Menu items snapshot with their details at that time
+  menu_items JSONB NOT NULL,
+  
+  -- Sales statistics per menu item
+  sales_stats JSONB NOT NULL,
+  
+  -- Aggregated metrics for BI
+  total_revenue DECIMAL(10,2) NOT NULL DEFAULT 0,
+  total_orders INTEGER NOT NULL DEFAULT 0,
+  total_items_sold INTEGER NOT NULL DEFAULT 0,
+  
+  -- Order type breakdown
+  dine_in_orders INTEGER NOT NULL DEFAULT 0,
+  takeaway_orders INTEGER NOT NULL DEFAULT 0,
+  
+  -- Time-based metrics
+  avg_order_value DECIMAL(10,2),
+  peak_hour INTEGER, -- Hour of the day with most orders (0-23)
+  
+  -- Additional notes for context
+  notes TEXT,
+  
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for efficient querying
+CREATE INDEX idx_menu_history_date ON menu_history(snapshot_date DESC);
+CREATE INDEX idx_menu_history_created_at ON menu_history(created_at DESC);
+
+-- Add GIN index for JSONB columns for efficient querying
+CREATE INDEX idx_menu_history_menu_items ON menu_history USING GIN (menu_items);
+CREATE INDEX idx_menu_history_sales_stats ON menu_history USING GIN (sales_stats);
+
+-- Comments for documentation
+COMMENT ON TABLE menu_history IS 'Stores daily menu snapshots with sales statistics for Business Intelligence analysis';
+COMMENT ON COLUMN menu_history.menu_items IS 'Array of menu items with their properties at the time of snapshot (name, price, category, etc.)';
+COMMENT ON COLUMN menu_history.sales_stats IS 'Sales statistics per menu item including quantity sold, revenue, and other metrics';
+COMMENT ON COLUMN menu_history.peak_hour IS 'Hour of the day (0-23) with the highest number of orders';
+
+-- Function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_menu_history_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to automatically update updated_at
+CREATE TRIGGER trigger_update_menu_history_updated_at
+  BEFORE UPDATE ON menu_history
+  FOR EACH ROW
+  EXECUTE FUNCTION update_menu_history_updated_at();

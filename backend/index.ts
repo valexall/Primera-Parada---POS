@@ -9,6 +9,7 @@ import dashboardRoutes from './routes/dashboardRoutes';
 import inventoryRoutes from './routes/inventoryRoutes';
 import authRoutes from './routes/authRoutes';
 import receiptRoutes from './routes/receiptRoutes';
+import menuHistoryRoutes from './routes/menuHistoryRoutes';
 const app = express();
 const PORT = process.env.PORT || 3001;
 // Middleware
@@ -24,6 +25,7 @@ app.use('/api/expenses', expensesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/receipts', receiptRoutes);
+app.use('/api/menu-history', menuHistoryRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

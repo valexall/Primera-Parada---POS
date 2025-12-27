@@ -16,6 +16,7 @@ import InventoryPage from './pages/InventoryPage';
 import RegisterUserPage from './pages/RegisterUserPage';
 import LoginPage from './pages/LoginPage';
 import HistoryPage from './pages/HistoryPage';
+import MenuHistoryPage from './pages/MenuHistoryPage';
 
 export function App() {
   return (
@@ -76,6 +77,12 @@ export function App() {
                   <Route path={ROUTES.USERS} element={
                     <ProtectedRoute allowedRoles={['admin']}>
                       <RegisterUserPage />
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path={ROUTES.MENU_HISTORY} element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <MenuHistoryPage />
                     </ProtectedRoute>
                   } />
                 </Routes>
