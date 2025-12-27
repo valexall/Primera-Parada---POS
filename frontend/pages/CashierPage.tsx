@@ -3,7 +3,7 @@ import { Order, Receipt as ReceiptType, SelectedItem } from '../types';
 import { orderService } from '../services/orderService';
 import { financeService } from '../services/financeService';
 import { receiptService } from '../services/receiptService';
-import { DollarSignIcon, CreditCardIcon, ReceiptIcon, ArrowLeftIcon, CheckCircle2Icon, CircleIcon, UtensilsIcon, PackageIcon } from 'lucide-react';
+import { DollarSignIcon, CreditCardIcon, ReceiptIcon, ArrowLeftIcon, CheckCircle2Icon, CircleIcon, UtensilsIcon, PackageIcon, AlertCircleIcon, XIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SkeletonCard } from '../components/ui/Loader';
 import Receipt from '../components/ui/Receipt';
@@ -22,6 +22,9 @@ const CashierPage: React.FC = () => {
   // NUEVO ESTADO: Items seleccionados para cobro parcial
   const [selectedItems, setSelectedItems] = useState<Map<string, number>>(new Map());
   const [isPartialPayment, setIsPartialPayment] = useState(false);
+  
+  // Estado para el modal de confirmación de pago
+  const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
 
   useEffect(() => {
     loadOrdersToPay();
@@ -108,54 +111,8 @@ const CashierPage: React.FC = () => {
       return;
     }
 
-    const total = calculateSelectedTotal().toFixed(2);
-    const paymentType = isPartialPayment ? 'Parcial' : 'Completo';
-
-    toast((t) => (
-      <div className="flex flex-col gap-4 w-full max-w-md mx-auto p-2">
-        <div className="text-center px-2">
-          <p className="font-bold text-slate-800 text-lg sm:text-xl mb-2">Confirmar Cobro {paymentType}</p>
-          <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-            ¿Cobrar <span className="font-bold text-slate-900 text-lg">S/. {total}</span> con{' '}
-            <span className="font-bold text-amber-600">{paymentMethod}</span>?
-          </p>
-          {isPartialPayment && (
-            <p className="text-xs text-slate-500 mt-2">
-              ({Array.from(selectedItems.values()).reduce((a, b) => a + b, 0)} items seleccionados)
-            </p>
-          )}
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-3 mt-2">
-          <button
-            onClick={() => toast.dismiss(t.id)}
-            className="flex-1 px-6 py-3.5 bg-slate-100 text-slate-700 rounded-xl text-base font-bold hover:bg-slate-200 active:scale-95 transition-all"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={() => {
-              toast.dismiss(t.id);
-              executePayment();
-            }}
-            className="flex-1 px-6 py-3.5 bg-green-500 text-white rounded-xl text-base font-bold hover:bg-green-600 shadow-lg shadow-green-200 active:scale-95 transition-all"
-          >
-            Sí, Cobrar
-          </button>
-        </div>
-      </div>
-    ), { 
-      duration: Infinity,
-      position: 'top-center',
-      style: {
-        background: 'white',
-        padding: '1rem',
-        borderRadius: '1rem',
-        boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-        minWidth: '90vw',
-        maxWidth: '500px',
-      }
-    });
+    // Abrir modal de confirmación
+    setShowPaymentConfirmation(true);
   };
 
   const executePayment = async () => {
@@ -506,6 +463,89 @@ const CashierPage: React.FC = () => {
         receipt={currentReceipt} 
         onClose={() => setCurrentReceipt(null)} 
       />
+    )}
+
+    {/* Modal de Confirmación de Pago */}
+    {showPaymentConfirmation && selectedOrder && (
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div 
+          className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-6 animate-in fade-in zoom-in duration-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Icono y Encabezado */}
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+              <AlertCircleIcon className="w-8 h-8 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">
+                Confirmar Pago {isPartialPayment ? 'Parcial' : 'Completo'}
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
+                ¿Deseas confirmar el pago de esta orden?
+              </p>
+            </div>
+          </div>
+
+          {/* Detalles del Pago */}
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-slate-600 dark:text-slate-400 font-medium">Total a cobrar:</span>
+              <span className="text-2xl font-bold text-slate-900 dark:text-white">
+                S/. {calculateSelectedTotal().toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-600 dark:text-slate-400 font-medium">Método de pago:</span>
+              <span className="font-bold text-amber-600 dark:text-amber-400">
+                {paymentMethod}
+              </span>
+            </div>
+            {isPartialPayment && (
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600 dark:text-slate-400 font-medium">Items seleccionados:</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                  {Array.from(selectedItems.values()).reduce((a, b) => a + b, 0)}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between items-center">
+              <span className="text-slate-600 dark:text-slate-400 font-medium">Emitir recibo:</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">
+                {needReceipt ? 'Sí' : 'No'}
+              </span>
+            </div>
+          </div>
+
+          {/* Botones de Acción */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowPaymentConfirmation(false)}
+              className="flex-1 px-4 py-3 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => {
+                setShowPaymentConfirmation(false);
+                executePayment();
+              }}
+              className="flex-1 px-4 py-3 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 shadow-lg shadow-green-200 dark:shadow-green-900/50 transition-all flex items-center justify-center gap-2"
+            >
+              <CheckCircle2Icon size={20} />
+              Confirmar
+            </button>
+          </div>
+
+          {/* Botón de Cerrar */}
+          <button
+            onClick={() => setShowPaymentConfirmation(false)}
+            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+          >
+            <XIcon size={20} />
+          </button>
+        </div>
+      </div>
     )}
   </>
   );
