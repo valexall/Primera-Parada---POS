@@ -125,3 +125,61 @@ export const deleteMenuItem = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const getDailyStats = async (req: Request, res: Response) => {
+  try {
+    // Obtener el inicio del día actual (00:00:00)
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const startTimestamp = startOfDay.getTime();
+
+    // Obtener todas las órdenes del día con estado "Entregado"
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('status', 'Entregado')
+      .gte('timestamp', startTimestamp);
+
+    if (ordersError) throw ordersError;
+
+    if (!orders || orders.length === 0) {
+      return res.json([]);
+    }
+
+    const orderIds = orders.map(o => o.id);
+
+    // Obtener todos los items de esas órdenes
+    const { data: orderItems, error: itemsError } = await supabase
+      .from('order_items')
+      .select('menu_item_id, menu_item_name, quantity')
+      .in('order_id', orderIds);
+
+    if (itemsError) throw itemsError;
+
+    // Agrupar y sumar las cantidades por plato
+    const statsMap = new Map<string, { name: string; quantity: number }>();
+
+    (orderItems || []).forEach(item => {
+      const existing = statsMap.get(item.menu_item_id);
+      if (existing) {
+        existing.quantity += item.quantity;
+      } else {
+        statsMap.set(item.menu_item_id, {
+          name: item.menu_item_name,
+          quantity: item.quantity
+        });
+      }
+    });
+
+    // Convertir a array y ordenar por cantidad (descendente)
+    const stats = Array.from(statsMap.values())
+      .sort((a, b) => b.quantity - a.quantity);
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching daily stats:', error);
+    res.status(500).json({
+      error: 'Error fetching daily stats'
+    });
+  }
+};

@@ -44,12 +44,24 @@ export const getOrdersByStatus = async (req: Request, res: Response) => {
     const {
       status
     } = req.params;
-    let query = supabase.from('orders').select('*').order('timestamp', {
-      ascending: false
-    });
+    
+    // Obtener el inicio del día actual (00:00:00)
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const startTimestamp = startOfDay.getTime();
+    
+    let query = supabase
+      .from('orders')
+      .select('*')
+      .gte('timestamp', startTimestamp) // Solo órdenes del día actual
+      .order('timestamp', {
+        ascending: false
+      });
+      
     if (status && status !== 'all') {
       query = query.eq('status', status);
     }
+    
     const {
       data: ordersData,
       error: ordersError
@@ -378,5 +390,74 @@ export const deleteOrder = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error deleting order:', error);
     res.status(500).json({ error: 'Error eliminando la orden' });
+  }
+};
+
+export const getOrderHistory = async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate, status } = req.query;
+    
+    // Obtener el inicio del día actual (00:00:00)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startTimestamp = startOfToday.getTime();
+    
+    let query = supabase
+      .from('orders')
+      .select('*')
+      .lt('timestamp', startTimestamp) // Solo órdenes de días anteriores
+      .order('timestamp', {
+        ascending: false
+      });
+    
+    // Filtros opcionales
+    if (startDate) {
+      const start = new Date(startDate as string);
+      start.setHours(0, 0, 0, 0);
+      query = query.gte('timestamp', start.getTime());
+    }
+    
+    if (endDate) {
+      const end = new Date(endDate as string);
+      end.setHours(23, 59, 59, 999);
+      query = query.lte('timestamp', end.getTime());
+    }
+    
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+    
+    const { data: ordersData, error: ordersError } = await query;
+    if (ordersError) throw ordersError;
+    
+    const ordersWithItems = await Promise.all((ordersData || []).map(async order => {
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('order_items')
+        .select('*')
+        .eq('order_id', order.id);
+        
+      if (itemsError) throw itemsError;
+      
+      return {
+        id: order.id,
+        timestamp: order.timestamp,
+        status: order.status,
+        tableNumber: order.table_number,
+        orderType: order.order_type || 'Dine-In',
+        customerName: order.customer_name,
+        items: (itemsData || []).map(item => ({
+          menuItemId: item.menu_item_id,
+          menuItemName: item.menu_item_name,
+          price: item.price,
+          quantity: item.quantity,
+          notes: item.notes
+        }))
+      };
+    }));
+    
+    res.json(ordersWithItems);
+  } catch (error) {
+    console.error('Error fetching order history:', error);
+    res.status(500).json({ error: 'Error obteniendo historial de órdenes' });
   }
 };

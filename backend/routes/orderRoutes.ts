@@ -1,5 +1,5 @@
 import express from 'express';
-import { getOrders, getOrdersByStatus, createOrder, updateOrderStatus, updateOrderItems, deleteOrder } from '../controllers/orderController';
+import { getOrders, getOrdersByStatus, createOrder, updateOrderStatus, updateOrderItems, deleteOrder, getOrderHistory } from '../controllers/orderController';
 import { verifyToken } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -9,6 +9,7 @@ router.use(verifyToken);
 
 router.get('/', getOrders);
 router.get('/status/:status', getOrdersByStatus);
+router.get('/history', getOrderHistory);
 router.post('/', createOrder);
 router.put('/:id/status', updateOrderStatus);
 router.put('/:id/items', updateOrderItems);

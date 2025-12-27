@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { ClockIcon, CheckCircleIcon, SoupIcon, BellIcon, EditIcon, UtensilsIcon, PackageIcon, XIcon, AlertTriangleIcon } from 'lucide-react';
+import { ClockIcon, CheckCircleIcon, SoupIcon, BellIcon, EditIcon, UtensilsIcon, PackageIcon, XIcon, AlertTriangleIcon, BarChart3Icon, TrendingUpIcon } from 'lucide-react';
 import { Order, OrderStatus, OrderItem } from '../types';
 import { orderService } from '../services/orderService';
+import { menuService } from '../services/menuService';
 import { supabaseClient } from '../services/supabaseClient';
 import { SkeletonCard } from '../components/ui/Loader';
 import EditOrderModal from '../components/ui/EditOrderModal';
@@ -13,6 +14,8 @@ const KitchenPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
+  const [dailyStats, setDailyStats] = useState<{ name: string; quantity: number }[]>([]);
+  const [showStats, setShowStats] = useState(false);
 
   const loadOrders = useCallback(async (isInitial = false) => {
     if (isInitial) setIsLoading(true);
@@ -34,6 +37,7 @@ const KitchenPage: React.FC = () => {
   // Carga inicial (muestra skeleton)
   useEffect(() => {
     loadOrders(true);
+    loadDailyStats();
   }, [loadOrders]);
 
   // Realtime (actualización silenciosa)
@@ -42,10 +46,20 @@ const KitchenPage: React.FC = () => {
       .channel('kitchen-orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
         loadOrders(false);
+        loadDailyStats(); // Actualizar stats cuando cambian las órdenes
       })
       .subscribe();
     return () => { supabaseClient.removeChannel(channel); };
   }, [loadOrders]);
+
+  const loadDailyStats = async () => {
+    try {
+      const stats = await menuService.getDailyStats();
+      setDailyStats(stats);
+    } catch (error) {
+      console.error('Error loading daily stats:', error);
+    }
+  };
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     // Optimistic Update: Actualizar UI antes que el servidor
@@ -95,7 +109,7 @@ const KitchenPage: React.FC = () => {
 
   return (
     <div className="pb-10">
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <SoupIcon className="text-amber-500" /> Pantalla de Cocina
@@ -103,20 +117,99 @@ const KitchenPage: React.FC = () => {
           <p className="text-slate-500 dark:text-slate-400 text-sm">Gestión de pedidos en tiempo real</p>
         </div>
         
-        <div className="flex bg-slate-200 dark:bg-slate-700 p-1 rounded-xl">
-          {(['Todos', 'Pendiente', 'Listo', 'Entregado'] as const).map(status => (
-            <button 
-              key={status} 
-              onClick={() => setFilter(status)} 
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-                filter === status ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-              }`}
-            >
-              {status}
+        <div className="flex gap-3">
+          {/* Botón de Estadísticas */}
+          <button
+            onClick={() => setShowStats(!showStats)}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+              showStats 
+                ? 'bg-blue-500 text-white shadow-lg' 
+                : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'
+            }`}
+          >
+            <BarChart3Icon size={18} />
+            {showStats ? 'Ocultar' : 'Ver'} Estadísticas
+          </button>
+
+          <div className="flex bg-slate-200 dark:bg-slate-700 p-1 rounded-xl">
+            {(['Todos', 'Pendiente', 'Listo', 'Entregado'] as const).map(status => (
+              <button 
+                key={status} 
+                onClick={() => setFilter(status)} 
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                  filter === status ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
+              >
+                {status}
             </button>
           ))}
         </div>
       </div>
+      </div>
+
+      {/* Panel de Estadísticas */}
+      {showStats && (
+        <div className="mb-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border-2 border-blue-200 dark:border-blue-800 animate-in fade-in slide-in-from-top duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                <TrendingUpIcon className="text-white" size={20} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                  Estadísticas del Día
+                </h2>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
+                  Platos vendidos (órdenes entregadas)
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {dailyStats.reduce((sum, item) => sum + item.quantity, 0)}
+              </div>
+              <div className="text-xs text-slate-600 dark:text-slate-400">
+                Total de platos
+              </div>
+            </div>
+          </div>
+
+          {dailyStats.length === 0 ? (
+            <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+              <BarChart3Icon className="mx-auto mb-2 opacity-30" size={40} />
+              <p className="text-sm">No hay ventas registradas aún hoy</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {dailyStats.map((stat, idx) => (
+                <div
+                  key={idx}
+                  className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-blue-100 dark:border-blue-800 hover:shadow-md transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate">
+                        {stat.name}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Plato #{idx + 1}
+                      </p>
+                    </div>
+                    <div className="ml-3 text-right">
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {stat.quantity}
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        unid.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {/* ESTADO DE CARGA: Skeletons */}

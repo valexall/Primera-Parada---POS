@@ -56,5 +56,18 @@ export const menuService = {
       return false;
     }
   },
+
+  /**
+   * Obtiene las estadísticas diarias de platos vendidos
+   */
+  getDailyStats: async (): Promise<{ name: string; quantity: number }[]> => {
+    try {
+      const response = await api.get('/menu/daily-stats');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching daily stats:', error);
+      return [];
+    }
+  },
 };
 

@@ -87,5 +87,23 @@ export const orderService = {
       throw error;
     }
   },
+
+  /**
+   * Obtiene el historial de pedidos de días anteriores
+   */
+  getHistory: async (startDate?: string, endDate?: string, status?: OrderStatus): Promise<Order[]> => {
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (status) params.append('status', status);
+      
+      const response = await api.get(`/orders/history?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching order history:', error);
+      return [];
+    }
+  },
 };
 
