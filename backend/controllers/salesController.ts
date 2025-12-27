@@ -20,6 +20,9 @@ export const getSalesHistory = async (req: Request, res: Response) => {
         orders (
           id,
           timestamp,
+          table_number,
+          order_type,
+          customer_name,
           order_items (
             menu_item_name,
             quantity

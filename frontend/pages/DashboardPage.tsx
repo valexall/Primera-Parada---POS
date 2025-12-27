@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { financeService } from '../services/financeService';
 import { receiptService } from '../services/receiptService';
 import { DailySummary, Expense, Sale, Receipt as ReceiptType } from '../types';
-import { TrendingUpIcon, TrendingDownIcon, WalletIcon, CalendarIcon, SearchIcon, ArrowDownCircleIcon, EyeIcon, ReceiptIcon } from 'lucide-react';
+import { TrendingUpIcon, TrendingDownIcon, WalletIcon, CalendarIcon, SearchIcon, ArrowDownCircleIcon, EyeIcon, ReceiptIcon, UtensilsIcon, PackageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SkeletonCard } from '../components/ui/Loader';
 import Receipt from '../components/ui/Receipt';
@@ -271,6 +271,20 @@ const DashboardPage: React.FC = () => {
                         <div className="text-xs text-slate-400 dark:text-slate-500 font-medium">{new Date(sale.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
                         </td>
                         <td className="p-3 align-top">
+                        <div className="flex items-center gap-2 mb-2">
+                          {sale.orders?.order_type === 'Takeaway' ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                              <PackageIcon size={12} />
+                              Para Llevar
+                              {sale.orders?.customer_name && <span className="ml-1">- {sale.orders.customer_name}</span>}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                              <UtensilsIcon size={12} />
+                              Mesa {sale.orders?.table_number || '?'}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1 mb-2">
                             {sale.orders?.order_items?.map((i, idx) => (
                                 <div key={idx} className="flex gap-1">

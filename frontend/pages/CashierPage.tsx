@@ -3,7 +3,7 @@ import { Order, Receipt as ReceiptType, SelectedItem } from '../types';
 import { orderService } from '../services/orderService';
 import { financeService } from '../services/financeService';
 import { receiptService } from '../services/receiptService';
-import { DollarSignIcon, CreditCardIcon, ReceiptIcon, ArrowLeftIcon, CheckCircle2Icon, CircleIcon } from 'lucide-react';
+import { DollarSignIcon, CreditCardIcon, ReceiptIcon, ArrowLeftIcon, CheckCircle2Icon, CircleIcon, UtensilsIcon, PackageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SkeletonCard } from '../components/ui/Loader';
 import Receipt from '../components/ui/Receipt';
@@ -301,9 +301,24 @@ const CashierPage: React.FC = () => {
               `}
             >
               <div className="flex justify-between items-center mb-2">
-                <span className={`px-3 py-1 rounded-lg text-sm font-bold ${selectedOrder?.id === order.id ? 'bg-amber-500 text-white' : 'bg-slate-800 dark:bg-amber-600 text-white'}`}>
-                  Mesa {order.tableNumber || '?'}
-                </span>
+                {order.orderType === 'Dine-In' ? (
+                  <span className={`px-3 py-1 rounded-lg text-sm font-bold flex items-center gap-2 ${selectedOrder?.id === order.id ? 'bg-amber-500 text-white' : 'bg-slate-800 dark:bg-amber-600 text-white'}`}>
+                    <UtensilsIcon size={16} />
+                    Mesa {order.tableNumber || '?'}
+                  </span>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    <span className={`px-3 py-1 rounded-lg text-sm font-bold flex items-center gap-2 ${selectedOrder?.id === order.id ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white'}`}>
+                      <PackageIcon size={16} />
+                      Para Llevar
+                    </span>
+                    {order.customerName && (
+                      <span className="text-xs text-slate-600 dark:text-slate-300 font-semibold">
+                        {order.customerName}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">#{order.id.slice(-4)}</span>
               </div>
               <div className="flex justify-between items-end">
@@ -340,10 +355,24 @@ const CashierPage: React.FC = () => {
                   {isPartialPayment ? 'Total Seleccionado' : 'Total a Cobrar'}
                 </h2>
                 <div className="text-3xl sm:text-4xl font-bold">S/. {calculateSelectedTotal().toFixed(2)}</div>
-                <div className="text-sm text-slate-400 dark:text-amber-100 mt-2">
-                  Mesa {selectedOrder.tableNumber} • {isPartialPayment 
-                    ? `${Array.from(selectedItems.values()).reduce((a, b) => a + b, 0)} items seleccionados` 
-                    : `${selectedOrder.items.length} items`}
+                <div className="text-sm text-slate-400 dark:text-amber-100 mt-2 flex items-center gap-2">
+                  {selectedOrder.orderType === 'Dine-In' ? (
+                    <>
+                      <UtensilsIcon size={16} />
+                      Mesa {selectedOrder.tableNumber}
+                    </>
+                  ) : (
+                    <>
+                      <PackageIcon size={16} />
+                      Para Llevar {selectedOrder.customerName && `- ${selectedOrder.customerName}`}
+                    </>
+                  )}
+                  <span>•</span>
+                  <span>
+                    {isPartialPayment 
+                      ? `${Array.from(selectedItems.values()).reduce((a, b) => a + b, 0)} items seleccionados` 
+                      : `${selectedOrder.items.length} items`}
+                  </span>
                 </div>
               </div>
             </div>

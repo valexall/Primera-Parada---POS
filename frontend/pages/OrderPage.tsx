@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { PlusIcon, MinusIcon, Trash2Icon, ShoppingBagIcon, ChevronRightIcon, XIcon, ChevronDownIcon } from 'lucide-react';
+import { PlusIcon, MinusIcon, Trash2Icon, ShoppingBagIcon, ChevronRightIcon, XIcon, ChevronDownIcon, UtensilsIcon, PackageIcon } from 'lucide-react';
 import { MenuItem, OrderItem } from '../types';
 import { menuService } from '../services/menuService';
 import { orderService } from '../services/orderService';
@@ -12,6 +12,8 @@ const OrderPage: React.FC = () => {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
+  const [orderType, setOrderType] = useState<'Dine-In' | 'Takeaway'>('Dine-In');
+  const [customerName, setCustomerName] = useState<string>('');
   
   // ESTADO NUEVO: Controlar la vista del carrito en celular
   const [showMobileCart, setShowMobileCart] = useState(false);
@@ -60,18 +62,21 @@ const OrderPage: React.FC = () => {
   const calculateTotal = () => orderItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
 
   const handleSubmit = async () => {
-    if (!selectedTable) return toast.error('Selecciona una mesa primero');
+    if (orderType === 'Dine-In' && !selectedTable) {
+      return toast.error('Selecciona una mesa primero');
+    }
     
     setIsSubmitting(true);
 
     // Usamos toast.promise para mejor UX
     await toast.promise(
-      orderService.create(orderItems, selectedTable),
+      orderService.create(orderItems, selectedTable, orderType, customerName),
       {
         loading: 'Enviando a cocina...',
         success: () => {
           setOrderItems([]);
           setSelectedTable('');
+          setCustomerName('');
           setShowMobileCart(false); // Cerrar carrito móvil si está abierto
           setIsSubmitting(false);
           return '¡Pedido enviado correctamente!';
@@ -91,29 +96,86 @@ const OrderPage: React.FC = () => {
       <div className="p-6 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
         <div className="flex justify-between items-center mb-3">
           <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
-            Mesa Seleccionada
+            Tipo de Orden
           </label>
           {/* Botón cerrar solo visible en móvil dentro del sheet */}
           <button onClick={() => setShowMobileCart(false)} className="lg:hidden text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
             <ChevronDownIcon />
           </button>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar touch-pan-x">
-          {TABLES.map(t => (
-            <button
-              key={t}
-              onClick={() => setSelectedTable(t)}
-              className={`
-                flex-shrink-0 w-12 h-12 rounded-xl font-bold text-sm flex items-center justify-center transition-all
-                ${selectedTable === t 
-                  ? 'bg-orange-600 text-white shadow-lg shadow-orange-200 dark:shadow-orange-900/50 scale-110' 
-                  : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300 dark:hover:border-orange-600'}
-              `}
-            >
-              {t}
-            </button>
-          ))}
+
+        {/* Selector de Tipo de Orden */}
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <button
+            onClick={() => {
+              setOrderType('Dine-In');
+              setCustomerName('');
+            }}
+            className={`p-3 rounded-xl font-bold text-sm flex flex-col items-center justify-center gap-2 transition-all ${
+              orderType === 'Dine-In'
+                ? 'bg-orange-600 text-white shadow-lg scale-105'
+                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'
+            }`}
+          >
+            <UtensilsIcon size={20} />
+            Para Comer
+          </button>
+          <button
+            onClick={() => {
+              setOrderType('Takeaway');
+              setSelectedTable('');
+            }}
+            className={`p-3 rounded-xl font-bold text-sm flex flex-col items-center justify-center gap-2 transition-all ${
+              orderType === 'Takeaway'
+                ? 'bg-orange-600 text-white shadow-lg scale-105'
+                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300'
+            }`}
+          >
+            <PackageIcon size={20} />
+            Para Llevar
+          </button>
         </div>
+
+        {/* Selector de Mesa (Dine-In) */}
+        {orderType === 'Dine-In' && (
+          <>
+            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
+              Mesa Seleccionada
+            </label>
+            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar touch-pan-x">
+              {TABLES.map(t => (
+                <button
+                  key={t}
+                  onClick={() => setSelectedTable(t)}
+                  className={`
+                    flex-shrink-0 w-12 h-12 rounded-xl font-bold text-sm flex items-center justify-center transition-all
+                    ${selectedTable === t 
+                      ? 'bg-orange-600 text-white shadow-lg shadow-orange-200 dark:shadow-orange-900/50 scale-110' 
+                      : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300 dark:hover:border-orange-600'}
+                  `}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Input de Nombre del Cliente (Takeaway) */}
+        {orderType === 'Takeaway' && (
+          <>
+            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
+              Nombre del Cliente <span className="text-slate-400 dark:text-slate-500 font-normal">(opcional)</span>
+            </label>
+            <input
+              type="text"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Ej: Juan Pérez (opcional)"
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-medium focus:border-orange-500 focus:outline-none transition-colors"
+            />
+          </>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -161,7 +223,7 @@ const OrderPage: React.FC = () => {
         </div>
         <button
           onClick={handleSubmit}
-          disabled={!selectedTable || orderItems.length === 0 || isSubmitting}
+          disabled={(orderType === 'Dine-In' && !selectedTable) || orderItems.length === 0 || isSubmitting}
           className={`w-full bg-slate-900 dark:bg-amber-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 dark:hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center justify-center gap-2 ${isSubmitting ? 'cursor-wait' : ''}`}
         >
           {isSubmitting ? 'Enviando...' : <>Confirmar Orden <ChevronRightIcon size={20} /></>}

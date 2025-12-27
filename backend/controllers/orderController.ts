@@ -83,13 +83,16 @@ export const getOrdersByStatus = async (req: Request, res: Response) => {
 };
 export const createOrder = async (req: Request, res: Response) => {
   try {
-    const { items, tableNumber } = req.body;
+    const { items, tableNumber, orderType = 'Dine-In', customerName } = req.body;
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'Items requeridos' });
     }
-    if (!tableNumber) {
-      return res.status(400).json({ error: 'El número de mesa es obligatorio' });
+    
+    // Validar según el tipo de orden
+    if (orderType === 'Dine-In' && !tableNumber) {
+      return res.status(400).json({ error: 'El número de mesa es obligatorio para órdenes Dine-In' });
     }
+    
     // Validate each item
     for (const item of items) {
       if (!item.menuItemId || !item.menuItemName || item.price === undefined || item.quantity === undefined) {
@@ -117,7 +120,9 @@ export const createOrder = async (req: Request, res: Response) => {
         id: orderId,
         timestamp,
         status: 'Pendiente',
-        table_number: tableNumber // <--- AQUÍ
+        table_number: orderType === 'Dine-In' ? tableNumber : null,
+        order_type: orderType,
+        customer_name: orderType === 'Takeaway' ? customerName : null
       }])
       .select()
       .single();
@@ -139,7 +144,9 @@ export const createOrder = async (req: Request, res: Response) => {
       id: orderId,
       timestamp,
       status: 'Pendiente',
-      tableNumber,
+      orderType,
+      tableNumber: orderType === 'Dine-In' ? tableNumber : undefined,
+      customerName: orderType === 'Takeaway' ? customerName : undefined,
       items
     });
   } catch (error) {
@@ -197,6 +204,9 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       id: data.id,
       timestamp: data.timestamp,
       status: data.status,
+      orderType: data.order_type || 'Dine-In',
+      tableNumber: data.table_number,
+      customerName: data.customer_name,
       items: (itemsData || []).map(item => ({
         menuItemId: item.menu_item_id,
         menuItemName: item.menu_item_name,

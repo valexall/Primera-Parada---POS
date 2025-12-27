@@ -35,9 +35,14 @@ export const orderService = {
   /**
    * Crea un nuevo pedido
    */
-  create: async (items: OrderItem[], tableNumber: string): Promise<Order> => {
+  create: async (items: OrderItem[], tableNumber: string, orderType?: 'Dine-In' | 'Takeaway', customerName?: string): Promise<Order> => {
     try {
-      const response = await api.post('/orders', { items, tableNumber });
+      const response = await api.post('/orders', { 
+        items, 
+        tableNumber, 
+        orderType: orderType || 'Dine-In',
+        customerName 
+      });
       return response.data;
     } catch (error) {
       console.error('Error creating order:', error);

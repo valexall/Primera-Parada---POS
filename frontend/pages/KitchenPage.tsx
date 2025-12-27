@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { ClockIcon, CheckCircleIcon, SoupIcon, BellIcon, EditIcon } from 'lucide-react';
+import { ClockIcon, CheckCircleIcon, SoupIcon, BellIcon, EditIcon, UtensilsIcon, PackageIcon } from 'lucide-react';
 import { Order, OrderStatus, OrderItem } from '../types';
 import { orderService } from '../services/orderService';
 import { supabaseClient } from '../services/supabaseClient';
@@ -113,9 +113,26 @@ const KitchenPage: React.FC = () => {
             <div className="flex justify-between items-start mb-4 pb-3 border-b border-slate-100/50 dark:border-slate-700/50">
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <span className="bg-slate-800 dark:bg-amber-600 text-white px-3 py-1 rounded-lg text-xl font-bold shadow-lg shadow-slate-300 dark:shadow-amber-900/50">
-                    Mesa {order.tableNumber || '?'}
-                  </span>
+                  {order.orderType === 'Dine-In' ? (
+                    <>
+                      <span className="bg-slate-800 dark:bg-amber-600 text-white px-3 py-1 rounded-lg text-xl font-bold shadow-lg shadow-slate-300 dark:shadow-amber-900/50 flex items-center gap-2">
+                        <UtensilsIcon size={18} />
+                        Mesa {order.tableNumber || '?'}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="bg-blue-600 dark:bg-blue-700 text-white px-3 py-1 rounded-lg text-xl font-bold shadow-lg shadow-blue-300 dark:shadow-blue-900/50 flex items-center gap-2">
+                        <PackageIcon size={18} />
+                        Para Llevar
+                      </span>
+                      {order.customerName && (
+                        <span className="text-sm text-slate-600 dark:text-slate-300 font-semibold bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
+                          {order.customerName}
+                        </span>
+                      )}
+                    </>
+                  )}
                   <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">#{order.id.slice(-4)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mt-2">

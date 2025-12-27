@@ -16,11 +16,15 @@ export interface OrderItem {
 
 export type OrderStatus = 'Pendiente' | 'Listo' | 'Entregado';
 
+export type OrderType = 'Dine-In' | 'Takeaway';
+
 export interface Order {
   id: string;
   timestamp: number;
   status: OrderStatus;
+  orderType?: OrderType;
   tableNumber?: string;
+  customerName?: string;
   items: OrderItem[];
 }
 
@@ -34,6 +38,9 @@ export interface Sale {
   orders?: {
     id: string;
     timestamp: number;
+    table_number?: number;
+    order_type?: OrderType;
+    customer_name?: string;
     order_items: {
       menu_item_name: string;
       quantity: number;

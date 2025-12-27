@@ -180,10 +180,17 @@ CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(created_at);
 ALTER TABLE orders 
 ADD COLUMN table_number TEXT;
 
+
+
+
 -- =============================================
--- TABLA DE RECIBOS (RECEIPTS)
+-- MIGRACIÓN: TABLA DE RECIBOS (RECEIPTS)
 -- Para control y trazabilidad de recibos emitidos
 -- =============================================
+-- Fecha: 2025-12-26
+-- Descripción: Crea la tabla receipts para almacenar los recibos/boletas emitidos
+
+-- 1. Crear tabla de recibos
 create table if not exists receipts (
   id UUID default gen_random_uuid () primary key,
   sale_id UUID not null references sales (id) on delete CASCADE,
@@ -199,11 +206,71 @@ create table if not exists receipts (
   created_at timestamp with time zone default NOW()
 );
 
--- Índices para consultas rápidas
+-- 2. Crear índices para consultas rápidas
 create index IF not exists idx_receipts_sale_id on receipts (sale_id);
 create index IF not exists idx_receipts_receipt_number on receipts (receipt_number);
 create index IF not exists idx_receipts_issued_at on receipts (issued_at desc);
 create index IF not exists idx_receipts_order_id on receipts (order_id);
 
--- Comentarios
+-- 3. Agregar comentarios para documentación
 COMMENT on table receipts is 'Registro de recibos/boletas emitidos para control y auditoría';
+COMMENT on column receipts.receipt_number is 'Número único de recibo con formato R-YYYYMMDD-XXXXXXXX';
+COMMENT on column receipts.items is 'Array JSON con los items del recibo (menuItemId, menuItemName, price, quantity, notes)';
+COMMENT on column receipts.subtotal is 'Subtotal sin IGV';
+COMMENT on column receipts.tax is 'Impuesto IGV (18%)';
+COMMENT on column receipts.total is 'Total incluyendo IGV';
+
+-- 4. Verificación
+SELECT 
+  'Tabla receipts creada exitosamente' as mensaje,
+  COUNT(*) as total_recibos
+FROM receipts;
+
+
+
+
+
+
+SELECT 'orders' as tabla, count(*) FROM orders
+UNION ALL SELECT 'sales', count(*) FROM sales
+UNION ALL SELECT 'receipts', count(*) FROM receipts
+UNION ALL SELECT 'menu_items', count(*) FROM menu_items
+
+
+UNION ALL SELECT 'users', count(*) FROM users;
+
+
+select * from users;
+
+
+
+
+-- =============================================
+-- MIGRACIÓN: ÓRDENES PARA LLEVAR
+-- =============================================
+-- Esta migración agrega soporte para órdenes "Para Llevar"
+
+-- 1. Agregar columna order_type a la tabla orders
+ALTER TABLE orders 
+ADD COLUMN IF NOT EXISTS order_type TEXT DEFAULT 'Dine-In' 
+CHECK (order_type IN ('Dine-In', 'Takeaway'));
+
+-- 2. Agregar columna customer_name para órdenes takeaway
+ALTER TABLE orders 
+ADD COLUMN IF NOT EXISTS customer_name TEXT;
+
+-- 3. Actualizar órdenes existentes para que sean Dine-In
+UPDATE orders 
+SET order_type = 'Dine-In' 
+WHERE order_type IS NULL;
+
+-- 4. Hacer table_number nullable ya que takeaway no necesita mesa
+ALTER TABLE orders 
+ALTER COLUMN table_number DROP NOT NULL;
+
+-- 5. Crear índice para búsqueda por tipo de orden
+CREATE INDEX IF NOT EXISTS idx_orders_type ON orders (order_type);
+
+-- 6. Comentario
+COMMENT ON COLUMN orders.order_type IS 'Tipo de orden: Dine-In (para comer aquí) o Takeaway (para llevar)';
+COMMENT ON COLUMN orders.customer_name IS 'Nombre del cliente (requerido solo para órdenes Takeaway)';
