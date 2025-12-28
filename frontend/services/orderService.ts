@@ -102,6 +102,19 @@ export const orderService = {
   },
 
   /**
+   * Actualiza el estado de un item individual dentro de un pedido
+   */
+  updateItemStatus: async (orderId: string, itemId: string, itemStatus: 'Pendiente' | 'Listo' | 'Entregado'): Promise<Order> => {
+    try {
+      const response = await api.patch(`/orders/${orderId}/items/${itemId}/status`, { itemStatus });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating item status:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Obtiene el historial de pedidos de días anteriores con paginación
    */
   getHistory: async (

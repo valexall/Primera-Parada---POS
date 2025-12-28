@@ -6,6 +6,7 @@ import {
   createOrder,
   updateOrderStatus,
   updateOrderItems,
+  updateOrderItemStatus,
   deleteOrder,
   getOrderHistory
 } from './order.controller';
@@ -61,6 +62,12 @@ router.put('/:id/status', updateOrderStatus);
  * Actualiza los items de una orden
  */
 router.put('/:id/items', updateOrderItems);
+
+/**
+ * PATCH /api/orders/:orderId/items/:itemId/status
+ * Actualiza el estado de un item individual
+ */
+router.patch('/:orderId/items/:itemId/status', updateOrderItemStatus);
 
 /**
  * DELETE /api/orders/:id

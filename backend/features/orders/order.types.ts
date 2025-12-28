@@ -9,6 +9,7 @@ export interface OrderItem {
   price: number;
   quantity: number;
   notes: string | null;
+  itemStatus?: 'Pendiente' | 'Listo' | 'Entregado';
 }
 
 export interface Order {
@@ -38,6 +39,10 @@ export interface UpdateOrderStatusRequest {
 
 export interface UpdateOrderItemsRequest {
   items: OrderItem[];
+}
+
+export interface UpdateOrderItemStatusRequest {
+  itemStatus: 'Pendiente' | 'Listo' | 'Entregado';
 }
 
 export interface OrderHistoryFilters {
@@ -74,6 +79,7 @@ export interface DbOrderItem {
   price: number;
   quantity: number;
   notes: string | null;
+  item_status: 'Pendiente' | 'Listo' | 'Entregado';
 }
 
 export interface DbOrder {

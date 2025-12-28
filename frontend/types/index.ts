@@ -8,11 +8,13 @@ export interface MenuItem {
 }
 
 export interface OrderItem {
+  id?: string; // ID del order_item en la BD (opcional, para actualizaciones)
   menuItemId: string;
   menuItemName: string;
   price: number;
   quantity: number;
   notes?: string;
+  itemStatus?: 'Pendiente' | 'Listo' | 'Entregado';
 }
 
 export type OrderStatus = 'Pendiente' | 'Listo' | 'Entregado';

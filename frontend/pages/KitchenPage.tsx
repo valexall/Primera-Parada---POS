@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { ClockIcon, CheckCircleIcon, SoupIcon, BellIcon, EditIcon, UtensilsIcon, PackageIcon, XIcon, AlertTriangleIcon, BarChart3Icon, TrendingUpIcon } from 'lucide-react';
+import { ClockIcon, CheckCircleIcon, SoupIcon, BellIcon, EditIcon, UtensilsIcon, PackageIcon, XIcon, AlertTriangleIcon, BarChart3Icon, TrendingUpIcon, Check } from 'lucide-react';
 import { Order, OrderStatus, OrderItem } from '../types';
 import { orderService } from '../services/orderService';
 import { menuService } from '../services/menuService';
@@ -185,13 +185,45 @@ const KitchenPage: React.FC = () => {
     }
   };
 
-  const handleUpdateOrder = async (orderId: string, items: OrderItem[]) => {
+  const handleItemStatusChange = async (orderId: string, itemId: string, currentStatus: string) => {
+    // Solo permitir cambiar de Pendiente a Listo
+    if (currentStatus !== 'Pendiente') return;
+
+    const newStatus = 'Listo';
+
+    // Optimistic Update: Actualizar UI inmediatamente
+    setOrders(current => current.map(order => {
+      if (order.id === orderId) {
+        return {
+          ...order,
+          items: order.items.map(item => 
+            item.id === itemId ? { ...item, itemStatus: newStatus } : item
+          )
+        };
+      }
+      return order;
+    }));
+
     try {
-      await orderService.updateItems(orderId, items);
-      // No se necesita loadOrders() - Realtime lo manejará
+      await orderService.updateItemStatus(orderId, itemId, newStatus);
+      
+      toast.success('Plato marcado como listo', {
+        icon: '✅',
+        duration: 1500,
+      });
+      
+      // No se necesita loadOrders() - Realtime lo manejará o ya actualizamos localmente
     } catch (error) {
-      throw error;
+      console.error('Error updating item status:', error);
+      toast.error('Error al actualizar el plato');
+      // Revertir en caso de error
+      await loadOrders(false);
     }
+  };
+
+  const handleUpdateOrder = async (orderId: string, items: OrderItem[]) => {
+    await orderService.updateItems(orderId, items);
+    // No se necesita loadOrders() - Realtime lo manejará
   };
 
   const handleDeleteOrder = async (orderId: string) => {
@@ -375,23 +407,65 @@ const KitchenPage: React.FC = () => {
             </div>
 
             <div className="space-y-2 mb-6">
-              {order.items.map((item, index) => (
-                <div key={index} className="flex justify-between items-start p-2 rounded-lg bg-slate-50/50 dark:bg-slate-900/50">
-                  <div className="flex-1">
-                    <span className="font-bold text-slate-700 dark:text-slate-200 text-lg block leading-tight">
-                      {item.menuItemName}
+              {order.items.map((item, index) => {
+                const isReady = item.itemStatus === 'Listo';
+                const isPending = !item.itemStatus || item.itemStatus === 'Pendiente';
+                
+                return (
+                  <div 
+                    key={item.id || index} 
+                    className={`flex justify-between items-center p-3 rounded-lg transition-all cursor-pointer ${
+                      isReady 
+                        ? 'bg-green-100 dark:bg-green-900/30 border-2 border-green-400 dark:border-green-600' 
+                        : 'bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/80'
+                    }`}
+                    onClick={() => {
+                      if (item.id && isPending) {
+                        handleItemStatusChange(order.id, item.id, item.itemStatus || 'Pendiente');
+                      }
+                    }}
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      {/* Checkbox/Indicador de estado */}
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                        isReady 
+                          ? 'bg-green-500 text-white' 
+                          : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                      }`}>
+                        {isReady && <Check size={16} strokeWidth={3} />}
+                      </div>
+                      
+                      <div className="flex-1">
+                        <span className={`font-bold text-lg block leading-tight transition-all ${
+                          isReady 
+                            ? 'text-green-700 dark:text-green-300 line-through' 
+                            : 'text-slate-700 dark:text-slate-200'
+                        }`}>
+                          {item.menuItemName}
+                        </span>
+                        {item.notes && (
+                          <span className="text-sm text-red-500 dark:text-red-400 font-medium bg-red-50 dark:bg-red-900/30 px-1 rounded block mt-1">
+                            * {item.notes}
+                          </span>
+                        )}
+                        {isReady && (
+                          <span className="text-xs text-green-600 dark:text-green-400 font-semibold mt-1 block">
+                            ✓ Listo para servir
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <span className={`font-bold px-3 py-1 rounded-lg text-lg shadow-sm ${
+                      isReady 
+                        ? 'bg-green-200 dark:bg-green-800 border border-green-300 dark:border-green-600 text-green-700 dark:text-green-200'
+                        : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
+                    }`}>
+                      x{item.quantity}
                     </span>
-                    {item.notes && (
-                      <span className="text-sm text-red-500 dark:text-red-400 font-medium bg-red-50 dark:bg-red-900/30 px-1 rounded block mt-1">
-                         * {item.notes}
-                      </span>
-                    )}
                   </div>
-                  <span className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold px-3 py-1 rounded-lg text-lg shadow-sm">
-                    x{item.quantity}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="flex gap-3 mt-auto">

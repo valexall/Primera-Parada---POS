@@ -26,11 +26,13 @@ const transformDbOrderToOrder = (dbOrder: DbOrder): Order => ({
   orderType: dbOrder.order_type || 'Dine-In',
   customerName: dbOrder.customer_name,
   items: (dbOrder.order_items || []).map(item => ({
+    id: item.id, // Incluir el ID del item
     menuItemId: item.menu_item_id,
     menuItemName: item.menu_item_name,
     price: item.price,
     quantity: item.quantity,
-    notes: item.notes
+    notes: item.notes,
+    itemStatus: item.item_status || 'Pendiente'
   }))
 });
 
@@ -49,7 +51,8 @@ export const getAllOrders = async (): Promise<Order[]> => {
         menu_item_name,
         price,
         quantity,
-        notes
+        notes,
+        item_status
       )
     `)
     .order('timestamp', { ascending: false });
@@ -80,7 +83,8 @@ export const getOrdersByStatus = async (status: string): Promise<Order[]> => {
         menu_item_name,
         price,
         quantity,
-        notes
+        notes,
+        item_status
       )
     `)
     .gte('timestamp', startTimestamp)
@@ -113,7 +117,8 @@ export const getOrderById = async (id: string): Promise<Order> => {
         menu_item_id,
         menu_item_name,
         price,
-        quantity,
+        quant,
+        item_statusity,
         notes
       )
     `)
@@ -239,7 +244,8 @@ export const updateOrderStatus = async (orderId: string, newStatus: string): Pro
         menu_item_name,
         price,
         quantity,
-        notes
+        notes,
+        item_status
       )
     `)
     .single();
@@ -341,13 +347,87 @@ export const updateOrderItems = async (orderId: string, itemsData: UpdateOrderIt
         menu_item_name,
         price,
         quantity,
-        notes
+        notes,
+        item_status
       )
     `)
     .single();
 
   if (updateError) {
     throw new Error(`Error updating order: ${updateError.message}`);
+  }
+
+  return transformDbOrderToOrder(updatedOrder);
+};
+
+/**
+ * Actualiza el estado de un item individual de una orden
+ * Lógica inteligente: Si todos los items están "Listos", actualiza la orden a "Listo" automáticamente
+ */
+export const updateOrderItemStatus = async (
+  itemId: string, 
+  newItemStatus: 'Pendiente' | 'Listo' | 'Entregado',
+  orderId: string
+): Promise<Order> => {
+  // Validar estado
+  const validStatuses: Array<'Pendiente' | 'Listo' | 'Entregado'> = ['Pendiente', 'Listo', 'Entregado'];
+  if (!validStatuses.includes(newItemStatus)) {
+    throw new Error(`Item status must be one of: ${validStatuses.join(', ')}`);
+  }
+
+  // 1. Actualizar el estado del item
+  const { error: updateItemError } = await supabase
+    .from('order_items')
+    .update({ item_status: newItemStatus })
+    .eq('id', itemId)
+    .eq('order_id', orderId);
+
+  if (updateItemError) {
+    throw new Error(`Error updating item status: ${updateItemError.message}`);
+  }
+
+  // 2. Obtener todos los items de la orden para verificar estados
+  const { data: allItems, error: itemsError } = await supabase
+    .from('order_items')
+    .select('item_status')
+    .eq('order_id', orderId);
+
+  if (itemsError) {
+    throw new Error(`Error fetching order items: ${itemsError.message}`);
+  }
+
+  // 3. Lógica inteligente: Si todos los items están "Listos", actualizar la orden a "Listo"
+  const allItemsReady = allItems && allItems.length > 0 && 
+    allItems.every(item => item.item_status === 'Listo');
+
+  if (allItemsReady) {
+    const timestamp = Date.now();
+    await supabase
+      .from('orders')
+      .update({ status: 'Listo', timestamp })
+      .eq('id', orderId);
+  }
+
+  // 4. Retornar la orden completa actualizada
+  const { data: updatedOrder, error: orderError } = await supabase
+    .from('orders')
+    .select(`
+      *,
+      order_items (
+        id,
+        menu_item_id,
+        menu_item_name,
+        price,
+        quantity,
+        notes,
+        item_status
+      )
+    `)
+    .eq('id', orderId)
+    .single();
+
+  if (orderError || !updatedOrder) {
+    throw new Error('Error fetching updated order');
   }
 
   return transformDbOrderToOrder(updatedOrder);

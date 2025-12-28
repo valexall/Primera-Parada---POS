@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as OrderService from './order.service';
-import type { CreateOrderRequest, UpdateOrderStatusRequest, UpdateOrderItemsRequest } from './order.types';
+import type { CreateOrderRequest, UpdateOrderStatusRequest, UpdateOrderItemsRequest, UpdateOrderItemStatusRequest } from './order.types';
 
 /**
  * OrderController - Capa HTTP delgada
@@ -174,6 +174,48 @@ export const updateOrderItems = async (req: Request, res: Response): Promise<voi
     
     res.status(500).json({
       error: error.message || 'Error al actualizar los items de la orden'
+    });
+  }
+};
+
+/**
+ * PATCH /api/orders/:orderId/items/:itemId/status
+ * Actualiza el estado de un item individual de una orden
+ */
+export const updateOrderItemStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { orderId, itemId } = req.params;
+    const { itemStatus }: UpdateOrderItemStatusRequest = req.body;
+
+    if (!orderId || !itemId) {
+      res.status(400).json({ error: 'Order ID and Item ID are required' });
+      return;
+    }
+
+    if (!itemStatus) {
+      res.status(400).json({ error: 'Item status is required' });
+      return;
+    }
+
+    const updatedOrder = await OrderService.updateOrderItemStatus(itemId, itemStatus, orderId);
+    res.json(updatedOrder);
+  } catch (error: any) {
+    console.error('Error updating order item status:', error);
+    
+    // Validación
+    if (error.message.includes('must be')) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+    
+    // Not found
+    if (error.message.includes('not found') || error.message.includes('fetching')) {
+      res.status(404).json({ error: error.message });
+      return;
+    }
+    
+    res.status(500).json({
+      error: error.message || 'Error updating order item status'
     });
   }
 };
