@@ -13,12 +13,3 @@ export interface DailySummary {
     yape: number;
   };
 }
-
-export interface SaleData {
-  total_amount: number;
-  payment_method: string;
-}
-
-export interface ExpenseData {
-  amount: number;
-}
