@@ -33,6 +33,19 @@ export const orderService = {
   },
 
   /**
+   * Obtiene un pedido por su ID
+   */
+  getById: async (id: string): Promise<Order> => {
+    try {
+      const response = await api.get(`/orders/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching order by id:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Crea un nuevo pedido
    */
   create: async (items: OrderItem[], tableNumber: string, orderType?: 'Dine-In' | 'Takeaway', customerName?: string): Promise<Order> => {

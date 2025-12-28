@@ -41,6 +41,35 @@ export const getOrdersByStatus = async (req: Request, res: Response): Promise<vo
 };
 
 /**
+ * GET /api/orders/:id
+ * Obtiene una orden por su ID
+ */
+export const getOrderById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      res.status(400).json({ error: 'Order ID is required' });
+      return;
+    }
+    
+    const order = await OrderService.getOrderById(id);
+    res.json(order);
+  } catch (error: any) {
+    console.error('Error fetching order by id:', error);
+    
+    if (error.message.includes('not found')) {
+      res.status(404).json({ error: error.message });
+      return;
+    }
+    
+    res.status(500).json({
+      error: error.message || 'Error fetching order'
+    });
+  }
+};
+
+/**
  * POST /api/orders
  * Crea una nueva orden
  */

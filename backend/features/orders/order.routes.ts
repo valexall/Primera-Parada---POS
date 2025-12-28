@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getOrders,
   getOrdersByStatus,
+  getOrderById,
   createOrder,
   updateOrderStatus,
   updateOrderItems,
@@ -35,6 +36,13 @@ router.get('/history', getOrderHistory);
  * Obtiene órdenes filtradas por estado
  */
 router.get('/status/:status', getOrdersByStatus);
+
+/**
+ * GET /api/orders/:id
+ * Obtiene una orden por su ID
+ * IMPORTANTE: Esta ruta debe ir DESPUÉS de /history y /status/:status para evitar conflictos
+ */
+router.get('/:id', getOrderById);
 
 /**
  * POST /api/orders

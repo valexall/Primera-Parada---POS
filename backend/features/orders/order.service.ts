@@ -100,6 +100,38 @@ export const getOrdersByStatus = async (status: string): Promise<Order[]> => {
 };
 
 /**
+ * Obtiene una orden por su ID
+ * ✅ Usa Resource Embedding - O(1) query
+ */
+export const getOrderById = async (id: string): Promise<Order> => {
+  const { data, error } = await supabase
+    .from('orders')
+    .select(`
+      *,
+      order_items (
+        id,
+        menu_item_id,
+        menu_item_name,
+        price,
+        quantity,
+        notes
+      )
+    `)
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    throw new Error(`Error fetching order by id: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error('Order not found');
+  }
+
+  return transformDbOrderToOrder(data);
+};
+
+/**
  * Crea una nueva orden con sus items
  */
 export const createOrder = async (orderData: CreateOrderRequest): Promise<Order> => {

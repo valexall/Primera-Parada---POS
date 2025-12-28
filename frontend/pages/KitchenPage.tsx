@@ -40,17 +40,127 @@ const KitchenPage: React.FC = () => {
     loadDailyStats();
   }, [loadOrders]);
 
-  // Realtime (actualización silenciosa)
+  // Realtime (actualización local instantánea sin peticiones HTTP)
   useEffect(() => {
     const channel = supabaseClient
       .channel('kitchen-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        loadOrders(false);
-        loadDailyStats(); // Actualizar stats cuando cambian las órdenes
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'orders' 
+      }, async (payload) => {
+        try {
+          // Obtener la orden completa desde el backend (incluye order_items)
+          const newOrder = await orderService.getById(payload.new.id);
+          
+          // Verificar si la orden coincide con el filtro actual
+          const shouldDisplay = filter === 'Todos' || newOrder.status === filter;
+          
+          if (shouldDisplay) {
+            setOrders(current => [newOrder, ...current]);
+          }
+          
+          // Actualizar stats solo si es relevante (orden entregada)
+          if (newOrder.status === 'Entregado') {
+            loadDailyStats();
+          }
+        } catch (error) {
+          console.error('Error handling INSERT event:', error);
+        }
+      })
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'orders' 
+      }, async (payload) => {
+        try {
+          const updatedData = payload.new;
+          const previousStatus = payload.old.status;
+          
+          setOrders(current => {
+            const existingOrder = current.find(o => o.id === updatedData.id);
+            const shouldDisplay = filter === 'Todos' || updatedData.status === filter;
+            
+            if (existingOrder) {
+              if (shouldDisplay) {
+                // Actualizar campos básicos manteniendo los items existentes
+                return current.map(o => 
+                  o.id === updatedData.id 
+                    ? { 
+                        ...o,
+                        status: updatedData.status,
+                        tableNumber: updatedData.table_number,
+                        orderType: updatedData.order_type || 'Dine-In',
+                        customerName: updatedData.customer_name,
+                        timestamp: updatedData.timestamp
+                      }
+                    : o
+                );
+              } else {
+                // Remover si ya no coincide con el filtro
+                return current.filter(o => o.id !== updatedData.id);
+              }
+            } else if (shouldDisplay) {
+              // Si no existe localmente, obtener orden completa
+              orderService.getById(updatedData.id).then(fullOrder => {
+                setOrders(curr => [fullOrder, ...curr]);
+              }).catch(err => console.error('Error fetching updated order:', err));
+            }
+            
+            return current;
+          });
+          
+          // Actualizar stats si el cambio es a Entregado
+          if (updatedData.status === 'Entregado' && previousStatus !== 'Entregado') {
+            loadDailyStats();
+          }
+        } catch (error) {
+          console.error('Error handling UPDATE event:', error);
+        }
+      })
+      .on('postgres_changes', { 
+        event: 'DELETE', 
+        schema: 'public', 
+        table: 'orders' 
+      }, (payload) => {
+        const deletedId = payload.old.id;
+        setOrders(current => current.filter(o => o.id !== deletedId));
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'order_items' 
+      }, async (payload) => {
+        try {
+          // Cuando cambian los items de una orden, recargar esa orden específica
+          const orderId = payload.new?.order_id || payload.old?.order_id;
+          
+          if (!orderId) return;
+          
+          const fullOrder = await orderService.getById(orderId);
+          const shouldDisplay = filter === 'Todos' || fullOrder.status === filter;
+          
+          setOrders(current => {
+            const exists = current.some(o => o.id === orderId);
+            
+            if (exists && shouldDisplay) {
+              return current.map(o => o.id === orderId ? fullOrder : o);
+            } else if (exists && !shouldDisplay) {
+              return current.filter(o => o.id !== orderId);
+            } else if (!exists && shouldDisplay) {
+              return [fullOrder, ...current];
+            }
+            
+            return current;
+          });
+        } catch (error) {
+          console.error('Error handling order_items change:', error);
+        }
       })
       .subscribe();
+      
     return () => { supabaseClient.removeChannel(channel); };
-  }, [loadOrders]);
+  }, [filter]);
 
   const loadDailyStats = async () => {
     try {
@@ -64,14 +174,21 @@ const KitchenPage: React.FC = () => {
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     // Optimistic Update: Actualizar UI antes que el servidor
     setOrders(current => current.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-    await orderService.updateStatus(orderId, newStatus);
-    loadOrders(false);
+    
+    try {
+      await orderService.updateStatus(orderId, newStatus);
+      // No se necesita loadOrders() - Realtime lo manejará
+    } catch (error) {
+      // Revertir en caso de error
+      console.error('Error updating status:', error);
+      await loadOrders(false);
+    }
   };
 
   const handleUpdateOrder = async (orderId: string, items: OrderItem[]) => {
     try {
       await orderService.updateItems(orderId, items);
-      await loadOrders(false);
+      // No se necesita loadOrders() - Realtime lo manejará
     } catch (error) {
       throw error;
     }
@@ -84,13 +201,12 @@ const KitchenPage: React.FC = () => {
       setDeletingOrderId(null);
       
       await orderService.delete(orderId);
+      // No se necesita loadOrders() - Realtime lo manejará
       
       toast.success('Pedido cancelado exitosamente', {
         icon: '🗑️',
         duration: 2000,
       });
-      
-      await loadOrders(false);
     } catch (error: any) {
       // Revertir en caso de error
       await loadOrders(false);
