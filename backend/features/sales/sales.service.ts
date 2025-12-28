@@ -4,7 +4,8 @@ import type {
   CreateSaleRequest, 
   CreatePartialSaleRequest,
   SalesHistoryFilters,
-  PartialSaleResponse
+  PartialSaleResponse,
+  PaginatedResponse
 } from './sales.types';
 
 /**
@@ -13,10 +14,17 @@ import type {
  */
 
 /**
- * Obtiene el historial de ventas con filtros opcionales
+ * Obtiene el historial de ventas con filtros opcionales y paginación
  * ✅ Usa Resource Embedding - O(1) query
+ * ✅ Server-Side Pagination con .range()
  */
-export const getSalesHistory = async (filters: SalesHistoryFilters): Promise<SaleWithOrder[]> => {
+export const getSalesHistory = async (filters: SalesHistoryFilters): Promise<PaginatedResponse<SaleWithOrder>> => {
+  const { startDate, endDate, page = 1, limit = 20 } = filters;
+
+  // Calcular rango para paginación
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
   let query = supabase
     .from('sales')
     .select(`
@@ -32,22 +40,35 @@ export const getSalesHistory = async (filters: SalesHistoryFilters): Promise<Sal
           quantity
         )
       )
-    `)
-    .order('created_at', { ascending: false });
+    `, { count: 'exact' })  // Habilitar conteo total
+    .order('created_at', { ascending: false })
+    .range(from, to);  // Aplicar paginación
 
-  if (filters.startDate && filters.endDate) {
+  // Filtros opcionales de fecha
+  if (startDate && endDate) {
     query = query
-      .gte('created_at', `${filters.startDate}T00:00:00`)
-      .lte('created_at', `${filters.endDate}T23:59:59`);
+      .gte('created_at', `${startDate}T00:00:00`)
+      .lte('created_at', `${endDate}T23:59:59`);
   }
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
 
   if (error) {
     throw new Error(`Error fetching sales history: ${error.message}`);
   }
 
-  return data || [];
+  const total = count || 0;
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    data: data || [],
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages
+    }
+  };
 };
 
 /**

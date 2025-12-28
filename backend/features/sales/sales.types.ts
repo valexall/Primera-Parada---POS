@@ -3,6 +3,19 @@
  * Representa la estructura de datos entre el backend y frontend
  */
 
+/**
+ * Respuesta paginada genérica
+ */
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export interface Sale {
   id: string;
   order_id: string;
@@ -50,6 +63,8 @@ export interface CreatePartialSaleRequest {
 export interface SalesHistoryFilters {
   startDate?: string;
   endDate?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface PartialSaleResponse extends Sale {

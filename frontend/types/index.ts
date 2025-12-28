@@ -101,6 +101,18 @@ export interface DailySummary {
   };
 }
 
+export interface SalesPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface SalesHistoryResponse {
+  data: Sale[];
+  pagination: SalesPagination;
+}
+
 export interface Supply {
   id: string;
   name: string;

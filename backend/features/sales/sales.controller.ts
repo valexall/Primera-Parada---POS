@@ -9,19 +9,35 @@ import type { CreateSaleRequest, CreatePartialSaleRequest } from './sales.types'
 
 /**
  * GET /api/sales/history
- * Obtiene el historial de ventas con filtros opcionales
+ * Obtiene el historial de ventas con filtros opcionales y paginación
  */
 export const getSalesHistory = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, page, limit } = req.query;
     
-    const filters = {
-      startDate: startDate as string | undefined,
-      endDate: endDate as string | undefined
-    };
-
-    const sales = await SalesService.getSalesHistory(filters);
-    res.json(sales);
+    // Parsear parámetros de paginación con valores por defecto
+    const pageNumber = page ? parseInt(page as string, 10) : 1;
+    const limitNumber = limit ? parseInt(limit as string, 10) : 20;
+    
+    // Validar parámetros de paginación
+    if (isNaN(pageNumber) || pageNumber < 1) {
+      res.status(400).json({ error: 'Page debe ser un número mayor a 0' });
+      return;
+    }
+    
+    if (isNaN(limitNumber) || limitNumber < 1 || limitNumber > 100) {
+      res.status(400).json({ error: 'Limit debe estar entre 1 y 100' });
+      return;
+    }
+    
+    const result = await SalesService.getSalesHistory({
+      startDate: startDate as string,
+      endDate: endDate as string,
+      page: pageNumber,
+      limit: limitNumber
+    });
+    
+    res.json(result);
   } catch (error: any) {
     console.error('Error fetching sales history:', error);
     res.status(500).json({

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { financeService } from '../services/financeService';
 import { receiptService } from '../services/receiptService';
-import { DailySummary, Expense, Sale, Receipt as ReceiptType } from '../types';
-import { TrendingUpIcon, TrendingDownIcon, WalletIcon, CalendarIcon, SearchIcon, ArrowDownCircleIcon, EyeIcon, ReceiptIcon, UtensilsIcon, PackageIcon } from 'lucide-react';
+import { DailySummary, Expense, Sale, Receipt as ReceiptType, SalesHistoryResponse } from '../types';
+import { TrendingUpIcon, TrendingDownIcon, WalletIcon, CalendarIcon, SearchIcon, ArrowDownCircleIcon, EyeIcon, ReceiptIcon, UtensilsIcon, PackageIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SkeletonCard } from '../components/ui/Loader';
 import Receipt from '../components/ui/Receipt';
@@ -18,6 +18,12 @@ const DashboardPage: React.FC = () => {
   });
   const [currentReceipt, setCurrentReceipt] = useState<ReceiptType | null>(null);
   
+  // Estados de paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [limit] = useState(20); // Registros por página
+  
   // Estado explícito de carga
   const [isLoading, setIsLoading] = useState(true);
 
@@ -32,12 +38,14 @@ const DashboardPage: React.FC = () => {
       const [summaryData, expensesData, historyData] = await Promise.all([
         financeService.getDailySummary(),
         financeService.getDailyExpenses(),
-        financeService.getSalesHistory(dateRange.start, dateRange.end)
+        financeService.getSalesHistory(dateRange.start, dateRange.end, currentPage, limit)
       ]);
 
       setSummary(summaryData);
       setExpenses(expensesData);
-      setHistory(historyData);
+      setHistory(historyData.data);
+      setTotalPages(historyData.pagination.totalPages);
+      setTotalRecords(historyData.pagination.total);
     } catch (error) {
       toast.error('Error al cargar la información financiera');
     } finally {
@@ -46,8 +54,29 @@ const DashboardPage: React.FC = () => {
   };
 
   const loadHistory = async () => {
-    const historyData = await financeService.getSalesHistory(dateRange.start, dateRange.end);
-    setHistory(historyData);
+    try {
+      // Resetear a página 1 cuando se cambian las fechas
+      setCurrentPage(1);
+      const historyData = await financeService.getSalesHistory(dateRange.start, dateRange.end, 1, limit);
+      setHistory(historyData.data);
+      setTotalPages(historyData.pagination.totalPages);
+      setTotalRecords(historyData.pagination.total);
+    } catch (error) {
+      toast.error('Error al cargar el historial');
+    }
+  };
+
+  const handlePageChange = async (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setCurrentPage(newPage);
+    try {
+      const historyData = await financeService.getSalesHistory(dateRange.start, dateRange.end, newPage, limit);
+      setHistory(historyData.data);
+      setTotalPages(historyData.pagination.totalPages);
+      setTotalRecords(historyData.pagination.total);
+    } catch (error) {
+      toast.error('Error al cambiar de página');
+    }
   };
 
   const handleAddExpense = async (e: React.FormEvent) => {
@@ -323,6 +352,40 @@ const DashboardPage: React.FC = () => {
                 </table>
             )}
           </div>
+
+          {/* Controles de paginación */}
+          {!isLoading && totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="text-sm text-slate-600 dark:text-slate-400">
+                Mostrando <span className="font-bold text-slate-800 dark:text-slate-200">{history.length}</span> de{' '}
+                <span className="font-bold text-slate-800 dark:text-slate-200">{totalRecords}</span> registros
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title="Página anterior"
+                >
+                  <ChevronLeftIcon size={18} />
+                </button>
+                
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300 px-3">
+                  Página {currentPage} de {totalPages}
+                </span>
+                
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title="Página siguiente"
+                >
+                  <ChevronRightIcon size={18} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

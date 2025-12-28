@@ -1,5 +1,5 @@
 import api from './api';
-import { Expense, DailySummary, Sale, PartialSaleRequest } from '../types';
+import { Expense, DailySummary, Sale, PartialSaleRequest, SalesHistoryResponse } from '../types';
 
 export const financeService = {
   // Ventas
@@ -31,9 +31,14 @@ export const financeService = {
     return response.data;
   },
 
-  //Obtener historial
-  getSalesHistory: async (startDate: string, endDate: string): Promise<Sale[]> => {
-    const response = await api.get(`/sales/history?startDate=${startDate}&endDate=${endDate}`);
+  // Obtener historial con paginación
+  getSalesHistory: async (
+    startDate: string, 
+    endDate: string, 
+    page: number = 1, 
+    limit: number = 20
+  ): Promise<SalesHistoryResponse> => {
+    const response = await api.get(`/sales/history?startDate=${startDate}&endDate=${endDate}&page=${page}&limit=${limit}`);
     return response.data;
   }
 
