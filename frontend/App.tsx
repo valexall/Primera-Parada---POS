@@ -20,7 +20,12 @@ import MenuHistoryPage from './pages/MenuHistoryPage';
 
 export function App() {
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      }}
+    >
       <ThemeProvider>
         <AuthProvider>
           {/* CONFIGURACIÓN DE ALERTAS (TOASTS) */}
