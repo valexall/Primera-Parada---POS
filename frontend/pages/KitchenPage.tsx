@@ -395,6 +395,17 @@ const KitchenPage: React.FC = () => {
             </div>
 
             <div className="flex gap-3 mt-auto">
+              {/* Botón de editar: visible para Pendiente, Listo y Entregado */}
+              {(order.status === 'Pendiente' || order.status === 'Listo' || order.status === 'Entregado') && (
+                <button 
+                  onClick={() => setEditingOrder(order)}
+                  className="px-4 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-200 dark:shadow-blue-900/50 transition-transform active:scale-95"
+                  title="Editar pedido"
+                >
+                  <EditIcon size={18} />
+                </button>
+              )}
+
               {order.status === 'Pendiente' && (
                 <>
                   <button 
@@ -403,13 +414,6 @@ const KitchenPage: React.FC = () => {
                     title="Cancelar pedido"
                   >
                     <XIcon size={18} />
-                  </button>
-                  <button 
-                    onClick={() => setEditingOrder(order)}
-                    className="px-4 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-200 dark:shadow-blue-900/50 transition-transform active:scale-95"
-                    title="Editar pedido"
-                  >
-                    <EditIcon size={18} />
                   </button>
                   <button 
                     onClick={() => handleStatusChange(order.id, 'Listo')}
