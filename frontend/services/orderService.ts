@@ -89,11 +89,19 @@ export const orderService = {
   },
 
   /**
-   * Obtiene el historial de pedidos de días anteriores
+   * Obtiene el historial de pedidos de días anteriores con paginación
    */
-  getHistory: async (startDate?: string, endDate?: string, status?: OrderStatus): Promise<Order[]> => {
+  getHistory: async (
+    page: number = 1, 
+    limit: number = 20,
+    startDate?: string, 
+    endDate?: string, 
+    status?: OrderStatus
+  ): Promise<{ data: Order[], pagination: { page: number, limit: number, total: number, totalPages: number } }> => {
     try {
       const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
       if (status) params.append('status', status);
@@ -102,7 +110,7 @@ export const orderService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching order history:', error);
-      return [];
+      return { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
     }
   },
 };

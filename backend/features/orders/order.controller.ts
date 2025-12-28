@@ -187,19 +187,36 @@ export const deleteOrder = async (req: Request, res: Response): Promise<void> =>
 
 /**
  * GET /api/orders/history
- * Obtiene el historial de órdenes
+ * Obtiene el historial de órdenes con paginación
  */
 export const getOrderHistory = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { startDate, endDate, status } = req.query;
+    const { startDate, endDate, status, page, limit } = req.query;
     
-    const orders = await OrderService.getOrderHistory({
+    // Parsear parámetros de paginación con valores por defecto
+    const pageNumber = page ? parseInt(page as string, 10) : 1;
+    const limitNumber = limit ? parseInt(limit as string, 10) : 20;
+    
+    // Validar parámetros de paginación
+    if (isNaN(pageNumber) || pageNumber < 1) {
+      res.status(400).json({ error: 'Page debe ser un número mayor a 0' });
+      return;
+    }
+    
+    if (isNaN(limitNumber) || limitNumber < 1 || limitNumber > 100) {
+      res.status(400).json({ error: 'Limit debe estar entre 1 y 100' });
+      return;
+    }
+    
+    const result = await OrderService.getOrderHistory({
       startDate: startDate as string,
       endDate: endDate as string,
-      status: status as string
+      status: status as string,
+      page: pageNumber,
+      limit: limitNumber
     });
     
-    res.json(orders);
+    res.json(result);
   } catch (error: any) {
     console.error('Error fetching order history:', error);
     res.status(500).json({

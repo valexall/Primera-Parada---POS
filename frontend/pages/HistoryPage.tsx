@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { HistoryIcon, CalendarIcon, FilterIcon, PackageIcon, UtensilsIcon, SearchIcon, XIcon } from 'lucide-react';
+import { HistoryIcon, CalendarIcon, FilterIcon, PackageIcon, UtensilsIcon, SearchIcon, XIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Order, OrderStatus } from '../types';
 import { orderService } from '../services/orderService';
 import { SkeletonCard } from '../components/ui/Loader';
@@ -11,20 +11,30 @@ const HistoryPage: React.FC = () => {
   const [endDate, setEndDate] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  
+  // Estados de paginación
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const limit = 20;
 
   useEffect(() => {
     loadHistory();
-  }, []);
+  }, [page]);
 
   const loadHistory = async () => {
     setLoading(true);
     try {
-      const historyOrders = await orderService.getHistory(
+      const response = await orderService.getHistory(
+        page,
+        limit,
         startDate || undefined,
         endDate || undefined,
         statusFilter !== 'all' ? statusFilter : undefined
       );
-      setOrders(historyOrders);
+      setOrders(response.data);
+      setTotalPages(response.pagination.totalPages);
+      setTotalRecords(response.pagination.total);
     } catch (error) {
       console.error('Error loading history:', error);
     } finally {
@@ -33,13 +43,17 @@ const HistoryPage: React.FC = () => {
   };
 
   const handleApplyFilters = () => {
-    loadHistory();
+    setPage(1); // Resetear a página 1 al aplicar nuevos filtros
+    if (page === 1) {
+      loadHistory(); // Si ya estamos en página 1, recargar manualmente
+    }
   };
 
   const handleClearFilters = () => {
     setStartDate('');
     setEndDate('');
     setStatusFilter('all');
+    setPage(1);
   };
 
   const calculateTotal = (order: Order): number => {
@@ -271,6 +285,43 @@ const HistoryPage: React.FC = () => {
           ))
         )}
       </div>
+
+      {/* Controles de Paginación */}
+      {!loading && orders.length > 0 && (
+        <div className="mt-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4">
+          <div className="flex items-center justify-between">
+            {/* Botón Anterior */}
+            <button
+              onClick={() => setPage(prev => Math.max(1, prev - 1))}
+              disabled={page === 1}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft size={18} />
+              Anterior
+            </button>
+
+            {/* Información de página */}
+            <div className="text-center">
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                Página {page} de {totalPages}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {totalRecords} registro{totalRecords !== 1 ? 's' : ''} en total
+              </p>
+            </div>
+
+            {/* Botón Siguiente */}
+            <button
+              onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={page === totalPages}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Siguiente
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

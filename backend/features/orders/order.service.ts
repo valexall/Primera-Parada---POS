@@ -364,15 +364,20 @@ export const deleteOrder = async (orderId: string): Promise<{ message: string }>
 };
 
 /**
- * Obtiene el historial de órdenes (días anteriores)
+ * Obtiene el historial de órdenes (días anteriores) con paginación
  * ✅ Usa Resource Embedding - O(1) query
+ * ✅ Implementa paginación del lado del servidor
  */
-export const getOrderHistory = async (filters: OrderHistoryFilters): Promise<Order[]> => {
-  const { startDate, endDate, status } = filters;
+export const getOrderHistory = async (filters: OrderHistoryFilters): Promise<import('./order.types').PaginatedResponse<Order>> => {
+  const { startDate, endDate, status, page = 1, limit = 20 } = filters;
 
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
   const startTimestamp = startOfToday.getTime();
+
+  // Calcular rango para paginación
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
 
   let query = supabase
     .from('orders')
@@ -386,9 +391,10 @@ export const getOrderHistory = async (filters: OrderHistoryFilters): Promise<Ord
         quantity,
         notes
       )
-    `)
+    `, { count: 'exact' })  // Habilitar conteo total
     .lt('timestamp', startTimestamp)
-    .order('timestamp', { ascending: false });
+    .order('timestamp', { ascending: false })
+    .range(from, to);  // Aplicar paginación
 
   // Filtros opcionales
   if (startDate) {
@@ -407,11 +413,22 @@ export const getOrderHistory = async (filters: OrderHistoryFilters): Promise<Ord
     query = query.eq('status', status);
   }
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
 
   if (error) {
     throw new Error(`Error fetching order history: ${error.message}`);
   }
 
-  return (data || []).map(transformDbOrderToOrder);
+  const total = count || 0;
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    data: (data || []).map(transformDbOrderToOrder),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages
+    }
+  };
 };

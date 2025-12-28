@@ -44,6 +44,21 @@ export interface OrderHistoryFilters {
   startDate?: string;
   endDate?: string;
   status?: string;
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Respuesta paginada genérica
+ */
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 /**
