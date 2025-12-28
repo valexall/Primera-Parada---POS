@@ -1,29 +1,34 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import menuRoutes from './routes/menuRoutes';
-import orderRoutes from './routes/orderRoutes';
-import salesRoutes from './routes/salesRoutes';
-import expensesRoutes from './routes/expensesRoutes';
-import dashboardRoutes from './routes/dashboardRoutes';
-import inventoryRoutes from './routes/inventoryRoutes';
-import authRoutes from './routes/authRoutes';
-import receiptRoutes from './routes/receiptRoutes';
-import menuHistoryRoutes from './routes/menuHistoryRoutes';
+
+// ✅ Importar desde la nueva arquitectura de features (Vertical Slices)
+import authRoutes from './features/auth/auth.routes';
+import menuRoutes from './features/menu/menu.routes';
+import orderRoutes from './features/orders/order.routes';
+import salesRoutes from './features/sales/sales.routes';
+import expensesRoutes from './features/expenses/expenses.routes';
+import dashboardRoutes from './features/dashboard/dashboard.routes';
+import inventoryRoutes from './features/inventory/inventory.routes';
+import receiptRoutes from './features/receipts/receipts.routes';
+import menuHistoryRoutes from './features/menu-history/menu-history.routes';
+
 const app = express();
 const PORT = process.env.PORT || 3001;
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
-app.use('/api/inventory', inventoryRoutes);
-// Routes
+
+// ✅ Routes - Todas desde features/
+app.use('/api/auth', authRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/sales', salesRoutes);
 app.use('/api/expenses', expensesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/auth', authRoutes);
+app.use('/api/inventory', inventoryRoutes);
 app.use('/api/receipts', receiptRoutes);
 app.use('/api/menu-history', menuHistoryRoutes);
 
