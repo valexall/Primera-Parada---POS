@@ -1,5 +1,9 @@
 import { supabase } from '../../config/supabase';
 import type { Supply, CreateSupplyRequest, RegisterPurchaseRequest } from './inventory.types';
+import { 
+  ValidationError, 
+  NotFoundError 
+} from '../../middleware/errorHandler';
 
 /**
  * InventoryService - Lógica de negocio para Inventario
@@ -29,7 +33,7 @@ export const createSupply = async (supplyData: CreateSupplyRequest): Promise<Sup
   const { name, unit, min_stock } = supplyData;
 
   if (!name || !unit || min_stock === undefined) {
-    throw new Error('Faltan datos requeridos');
+    throw new ValidationError('Nombre, unidad y stock mínimo son requeridos');
   }
 
   const { data, error } = await supabase

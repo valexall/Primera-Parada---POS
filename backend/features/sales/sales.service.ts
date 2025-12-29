@@ -7,6 +7,11 @@ import type {
   PartialSaleResponse,
   PaginatedResponse
 } from './sales.types';
+import { 
+  ValidationError, 
+  NotFoundError, 
+  ConflictError 
+} from '../../middleware/errorHandler';
 
 /**
  * SalesService - Lógica de negocio para Ventas

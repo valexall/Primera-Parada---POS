@@ -13,6 +13,9 @@ import inventoryRoutes from './features/inventory/inventory.routes';
 import receiptRoutes from './features/receipts/receipts.routes';
 import menuHistoryRoutes from './features/menu-history/menu-history.routes';
 
+// ✅ Sistema robusto de manejo de errores
+import { errorHandler, notFoundHandler, errorMetrics } from './middleware/errorHandler';
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -36,16 +39,38 @@ app.use('/api/menu-history', menuHistoryRoutes);
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    message: 'Server is running'
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
   });
 });
-// Error handling
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({
-    error: 'Something went wrong!'
+
+// 📊 Endpoint de métricas de errores (proteger en producción)
+app.get('/api/metrics/errors', (req, res) => {
+  const summary = errorMetrics.getSummary();
+  res.json({
+    timestamp: new Date().toISOString(),
+    ...summary
   });
 });
+
+// 📊 Endpoint de métricas completas (proteger en producción)
+app.get('/api/metrics/errors/full', (req, res) => {
+  const fullMetrics = errorMetrics.getMetrics();
+  res.json({
+    timestamp: new Date().toISOString(),
+    ...fullMetrics
+  });
+});
+
+// ✅ Manejador de rutas no encontradas (404)
+// DEBE ir después de todas las rutas pero antes del error handler
+app.use(notFoundHandler);
+
+// ✅ Middleware global de manejo de errores
+// DEBE ser el último middleware registrado
+app.use(errorHandler);
+
 const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);

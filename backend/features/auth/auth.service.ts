@@ -2,6 +2,11 @@ import { supabase } from '../../config/supabase';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import type { LoginRequest, RegisterRequest, LoginResponse, RegisterResponse, DbUser, JWTPayload } from './auth.types';
+import { 
+  ValidationError, 
+  UnauthorizedError, 
+  ConflictError 
+} from '../../middleware/errorHandler';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secreto_super_seguro_cambiar_en_prod';
 
@@ -15,9 +20,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secreto_super_seguro_cambiar_en_pr
 export const loginUser = async (credentials: LoginRequest): Promise<LoginResponse> => {
   const { email, password } = credentials;
 
-  // Validaciones básicas
+  // ✅ Validaciones con errores específicos
   if (!email || !password) {
-    throw new Error('Email y contraseña son requeridos');
+    throw new ValidationError('Email y contraseña son requeridos');
   }
 
   // Buscar usuario
@@ -28,13 +33,13 @@ export const loginUser = async (credentials: LoginRequest): Promise<LoginRespons
     .single<DbUser>();
 
   if (error || !user) {
-    throw new Error('Credenciales inválidas');
+    throw new UnauthorizedError('Credenciales inválidas');
   }
 
   // Verificar contraseña
   const validPassword = await bcrypt.compare(password, user.password);
   if (!validPassword) {
-    throw new Error('Credenciales inválidas');
+    throw new UnauthorizedError('Credenciales inválidas');
   }
 
   // Generar Token JWT
@@ -63,18 +68,18 @@ export const loginUser = async (credentials: LoginRequest): Promise<LoginRespons
 export const registerUser = async (userData: RegisterRequest): Promise<RegisterResponse> => {
   const { email, password, name, role } = userData;
 
-  // Validaciones
+  // ✅ Validaciones con errores específicos
   if (!email || !password || !name || !role) {
-    throw new Error('Todos los campos son requeridos');
+    throw new ValidationError('Todos los campos son requeridos');
   }
 
   if (password.length < 6) {
-    throw new Error('La contraseña debe tener al menos 6 caracteres');
+    throw new ValidationError('La contraseña debe tener al menos 6 caracteres');
   }
 
   const validRoles = ['admin', 'cajero', 'cocina'];
   if (!validRoles.includes(role)) {
-    throw new Error('Rol inválido');
+    throw new ValidationError('Rol inválido. Roles permitidos: admin, cajero, cocina');
   }
 
   // ✅ OPTIMIZADO: Hash con 10 rounds (balance seguridad/performance)
@@ -94,9 +99,9 @@ export const registerUser = async (userData: RegisterRequest): Promise<RegisterR
     .single<DbUser>();
 
   if (error) {
-    // Manejo de error de email duplicado
+    // ✅ Manejo específico de errores de base de datos
     if (error.code === '23505') {
-      throw new Error('El email ya está registrado');
+      throw new ConflictError('El email ya está registrado');
     }
     throw new Error(`Error creando usuario: ${error.message}`);
   }
@@ -115,6 +120,7 @@ export const verifyToken = (token: string): JWTPayload => {
     const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
     return decoded;
   } catch (error) {
-    throw new Error('Token inválido o expirado');
+    // Los errores de JWT serán manejados por el errorHandler global
+    throw error;
   }
 };

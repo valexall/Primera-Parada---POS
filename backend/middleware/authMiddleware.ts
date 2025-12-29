@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { UnauthorizedError, ForbiddenError } from './errorHandler';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secreto_super_seguro_cambiar_en_prod';
 
@@ -7,30 +8,42 @@ export interface AuthRequest extends Request {
   user?: {
     id: string;
     role: string;
+    name: string;
   };
 }
 
-// Verificar si está logueado
+/**
+ * Middleware: Verificar autenticación mediante JWT
+ */
 export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const token = req.headers['authorization']?.split(' ')[1]; // Bearer <token>
+  const authHeader = req.headers['authorization'];
+  const token = authHeader?.split(' ')[1]; // Bearer <token>
 
   if (!token) {
-    return res.status(403).json({ error: 'Acceso denegado: Token requerido' });
+    throw new UnauthorizedError('Token de autenticación requerido');
   }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
     req.user = decoded;
     next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Token inválido o expirado' });
+  } catch (err: any) {
+    // Los errores de JWT serán manejados automáticamente por errorHandler
+    throw err;
   }
 };
 
-// Verificar si es Administrador (Dueña)
+/**
+ * Middleware: Verificar rol de Administrador
+ */
 export const verifyAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (req.user?.role !== 'admin') {
-    return res.status(403).json({ error: 'Acceso denegado: Se requiere rol de Administrador' });
+  if (!req.user) {
+    throw new UnauthorizedError('Usuario no autenticado');
   }
+
+  if (req.user.role !== 'admin') {
+    throw new ForbiddenError('Se requiere rol de Administrador');
+  }
+  
   next();
 };

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as ExpensesService from './expenses.service';
 import type { CreateExpenseRequest } from './expenses.types';
+import { asyncHandler } from '../../middleware/errorHandler';
 
 /**
  * ExpensesController - Capa HTTP delgada
@@ -11,64 +12,34 @@ import type { CreateExpenseRequest } from './expenses.types';
  * GET /api/expenses/daily
  * Obtiene los gastos del día actual
  */
-export const getDailyExpenses = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const expenses = await ExpensesService.getDailyExpenses();
-    res.json(expenses);
-  } catch (error: any) {
-    console.error('Error fetching daily expenses:', error);
-    res.status(500).json({
-      error: error.message || 'Error obteniendo gastos del día'
-    });
-  }
-};
+export const getDailyExpenses = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const expenses = await ExpensesService.getDailyExpenses();
+  res.json(expenses);
+});
 
 /**
  * GET /api/expenses
  * Obtiene gastos con filtros opcionales
  */
-export const getExpenses = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { date, startDate, endDate } = req.query;
-    
-    const filters = {
-      date: date as string | undefined,
-      startDate: startDate as string | undefined,
-      endDate: endDate as string | undefined
-    };
+export const getExpenses = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { date, startDate, endDate } = req.query;
+  
+  const filters = {
+    date: date as string | undefined,
+    startDate: startDate as string | undefined,
+    endDate: endDate as string | undefined
+  };
 
-    const expenses = await ExpensesService.getExpenses(filters);
-    res.json(expenses);
-  } catch (error: any) {
-    console.error('Error fetching expenses:', error);
-    res.status(500).json({
-      error: error.message || 'Error obteniendo gastos'
-    });
-  }
-};
+  const expenses = await ExpensesService.getExpenses(filters);
+  res.json(expenses);
+});
 
 /**
  * POST /api/expenses
  * Crea un nuevo gasto
  */
-export const createExpense = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const expenseData: CreateExpenseRequest = req.body;
-    const newExpense = await ExpensesService.createExpense(expenseData);
-    res.status(201).json(newExpense);
-  } catch (error: any) {
-    console.error('Error creating expense:', error);
-    
-    // Errores de validación (400)
-    if (error.message.includes('requerido') || 
-        error.message.includes('Faltan datos')) {
-      res.status(400).json({ error: error.message });
-      return;
-    }
-    
-    // Errores del servidor (500)
-    res.status(500).json({
-      error: error.message || 'Error registrando gasto'
-    });
-  }
-};
+export const createExpense = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const expenseData: CreateExpenseRequest = req.body;
+  const newExpense = await ExpensesService.createExpense(expenseData);
+  res.status(201).json(newExpense);
+});

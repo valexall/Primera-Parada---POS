@@ -1,5 +1,8 @@
 import { supabase } from '../../config/supabase';
 import type { Expense, CreateExpenseRequest, ExpenseFilters } from './expenses.types';
+import { 
+  ValidationError 
+} from '../../middleware/errorHandler';
 
 /**
  * ExpensesService - Lógica de negocio para Gastos

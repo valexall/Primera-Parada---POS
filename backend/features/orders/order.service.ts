@@ -8,6 +8,11 @@ import type {
   OrderHistoryFilters,
   DbOrder 
 } from './order.types';
+import { 
+  ValidationError, 
+  NotFoundError, 
+  ConflictError 
+} from '../../middleware/errorHandler';
 
 /**
  * OrderService - Lógica de negocio para Órdenes

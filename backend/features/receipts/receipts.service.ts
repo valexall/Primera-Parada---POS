@@ -1,4 +1,5 @@
 import { supabase } from '../../config/supabase';
+import { ValidationError, NotFoundError } from '../../middleware/errorHandler';
 import type { Receipt, ReceiptItem, ReceiptHistoryItem, ReceiptHistoryFilters, DbReceipt } from './receipts.types';
 
 /**

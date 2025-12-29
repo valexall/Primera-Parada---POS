@@ -1,5 +1,10 @@
 import { supabase } from '../../config/supabase';
 import type { MenuItem, CreateMenuItemRequest, UpdateMenuItemRequest, DailyMenuStats } from './menu.types';
+import { 
+  ValidationError, 
+  NotFoundError, 
+  ConflictError 
+} from '../../middleware/errorHandler';
 
 /**
  * MenuService - Lógica de negocio para el menú
@@ -27,17 +32,17 @@ export const getAllMenuItems = async (): Promise<MenuItem[]> => {
 export const addMenuItem = async (itemData: CreateMenuItemRequest): Promise<MenuItem> => {
   const { name, price } = itemData;
 
-  // Validaciones
+  // ✅ Validaciones con errores específicos
   if (!name || price === undefined || price === null) {
-    throw new Error('Name and price are required');
+    throw new ValidationError('Nombre y precio son requeridos');
   }
 
   if (typeof price !== 'number' || price <= 0) {
-    throw new Error('Price must be a positive number');
+    throw new ValidationError('El precio debe ser un número positivo');
   }
 
   if (typeof name !== 'string' || name.trim().length === 0) {
-    throw new Error('Name must be a non-empty string');
+    throw new ValidationError('El nombre debe ser un texto no vacío');
   }
 
   const { data, error } = await supabase
@@ -50,6 +55,10 @@ export const addMenuItem = async (itemData: CreateMenuItemRequest): Promise<Menu
     .single();
 
   if (error) {
+    // ✅ Manejo específico de duplicados
+    if (error.code === '23505') {
+      throw new ConflictError('Ya existe un ítem con ese nombre');
+    }
     throw new Error(`Error adding menu item: ${error.message}`);
   }
 
@@ -61,27 +70,27 @@ export const addMenuItem = async (itemData: CreateMenuItemRequest): Promise<Menu
  */
 export const updateMenuItem = async (id: string, updates: UpdateMenuItemRequest): Promise<MenuItem> => {
   if (!id) {
-    throw new Error('Menu item ID is required');
+    throw new ValidationError('El ID del ítem es requerido');
   }
 
   const updateData: { name?: string; price?: number } = {};
 
   if (updates.name !== undefined) {
     if (typeof updates.name !== 'string' || updates.name.trim().length === 0) {
-      throw new Error('Name must be a non-empty string');
+      throw new ValidationError('El nombre debe ser un texto no vacío');
     }
     updateData.name = updates.name.trim();
   }
 
   if (updates.price !== undefined) {
     if (typeof updates.price !== 'number' || updates.price <= 0) {
-      throw new Error('Price must be a positive number');
+      throw new ValidationError('El precio debe ser un número positivo');
     }
     updateData.price = parseFloat(updates.price.toString());
   }
 
   if (Object.keys(updateData).length === 0) {
-    throw new Error('At least one field (name or price) must be provided');
+    throw new ValidationError('Debe proporcionar al menos un campo para actualizar (nombre o precio)');
   }
 
   const { data, error } = await supabase
@@ -96,7 +105,7 @@ export const updateMenuItem = async (id: string, updates: UpdateMenuItemRequest)
   }
 
   if (!data) {
-    throw new Error('Menu item not found');
+    throw new NotFoundError(`Ítem del menú con ID ${id}`);
   }
 
   return data;
@@ -107,7 +116,7 @@ export const updateMenuItem = async (id: string, updates: UpdateMenuItemRequest)
  */
 export const deleteMenuItem = async (id: string): Promise<void> => {
   if (!id) {
-    throw new Error('Menu item ID is required');
+    throw new ValidationError('El ID del ítem es requerido');
   }
 
   const { error } = await supabase
