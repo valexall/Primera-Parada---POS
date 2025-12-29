@@ -263,7 +263,8 @@ export const updateOrderStatus = async (orderId: string, newStatus: string): Pro
 
 /**
  * Actualiza los items de una orden
- * ✅ Usa Resource Embedding - O(1) query
+ * ✅ OPTIMIZADO: Usa UPSERT inteligente en lugar de DELETE+INSERT
+ * Preserva IDs existentes, actualiza modificados, inserta nuevos, elimina removidos
  */
 export const updateOrderItems = async (orderId: string, itemsData: UpdateOrderItemsRequest): Promise<Order> => {
   const { items } = itemsData;
@@ -271,21 +272,6 @@ export const updateOrderItems = async (orderId: string, itemsData: UpdateOrderIt
   // Validaciones
   if (!items || !Array.isArray(items) || items.length === 0) {
     throw new Error('Items requeridos');
-  }
-
-  // Verificar que la orden existe y no está pagada
-  const { data: orderData, error: orderError } = await supabase
-    .from('orders')
-    .select('*')
-    .eq('id', orderId)
-    .single();
-
-  if (orderError || !orderData) {
-    throw new Error('Orden no encontrada');
-  }
-
-  if (orderData.status === 'Pagado') {
-    throw new Error('No se puede editar una orden ya pagada');
   }
 
   // Validar cada item
@@ -301,67 +287,56 @@ export const updateOrderItems = async (orderId: string, itemsData: UpdateOrderIt
     }
   }
 
-  // Eliminar items actuales
-  const { error: deleteError } = await supabase
-    .from('order_items')
-    .delete()
-    .eq('order_id', orderId);
+  // Preparar items en formato JSON para el procedimiento almacenado
+  const itemsJson = items.map((item) => ({
+    id: item.id || null,  // Si tiene ID, se actualiza; si no, se inserta
+    menuItemId: item.menuItemId,
+    menuItemName: item.menuItemName,
+    price: item.price,
+    quantity: item.quantity,
+    notes: item.notes || null,
+    itemStatus: item.itemStatus || 'Pendiente'
+  }));
 
-  if (deleteError) {
-    throw new Error(`Error deleting order items: ${deleteError.message}`);
-  }
-
-  // Insertar nuevos items
-  const orderItems = items.map((item) => {
-    const isCustomItem = item.menuItemId && item.menuItemId.toString().startsWith('CUSTOM-');
-    
-    return {
-      order_id: orderId,
-      menu_item_id: isCustomItem ? randomUUID() : item.menuItemId,
-      menu_item_name: item.menuItemName,
-      price: item.price,
-      quantity: item.quantity,
-      notes: item.notes || null
-    };
+  // ✅ Llamar al procedimiento almacenado de UPSERT optimizado
+  // Esto reemplaza DELETE + INSERT por operaciones atómicas inteligentes
+  const { data, error } = await supabase.rpc('upsert_order_items_optimized', {
+    p_order_id: orderId,
+    p_items: JSON.stringify(itemsJson)
   });
 
-  const { error: itemsError } = await supabase
-    .from('order_items')
-    .insert(orderItems);
-
-  if (itemsError) {
-    throw new Error(`Error inserting order items: ${itemsError.message}`);
+  if (error) {
+    throw new Error(`Error updating order items: ${error.message}`);
   }
 
-  // Actualizar timestamp y obtener orden completa con items
-  const timestamp = Date.now();
-  const { data: updatedOrder, error: updateError } = await supabase
-    .from('orders')
-    .update({ timestamp })
-    .eq('id', orderId)
-    .select(`
-      *,
-      order_items (
-        id,
-        menu_item_id,
-        menu_item_name,
-        price,
-        quantity,
-        notes,
-        item_status
-      )
-    `)
-    .single();
-
-  if (updateError) {
-    throw new Error(`Error updating order: ${updateError.message}`);
+  if (!data || data.length === 0) {
+    throw new Error('Order not found after update');
   }
 
-  return transformDbOrderToOrder(updatedOrder);
+  // Transformar el resultado
+  const orderData = data[0];
+  return {
+    id: orderData.id,
+    timestamp: orderData.timestamp,
+    status: orderData.status as Order['status'],
+    tableNumber: orderData.table_number,
+    orderType: orderData.order_type || 'Dine-In',
+    customerName: orderData.customer_name,
+    items: (orderData.order_items_json || []).map((item: any) => ({
+      id: item.id,
+      menuItemId: item.menuItemId,
+      menuItemName: item.menuItemName,
+      price: item.price,
+      quantity: item.quantity,
+      notes: item.notes,
+      itemStatus: item.itemStatus || 'Pendiente'
+    }))
+  };
 };
 
 /**
  * Actualiza el estado de un item individual de una orden
+ * ✅ OPTIMIZADO: Usa procedimiento almacenado - 1 query en lugar de 4
  * Lógica inteligente: Si todos los items están "Listos", actualiza la orden a "Listo" automáticamente
  */
 export const updateOrderItemStatus = async (
@@ -375,62 +350,41 @@ export const updateOrderItemStatus = async (
     throw new Error(`Item status must be one of: ${validStatuses.join(', ')}`);
   }
 
-  // 1. Actualizar el estado del item
-  const { error: updateItemError } = await supabase
-    .from('order_items')
-    .update({ item_status: newItemStatus })
-    .eq('id', itemId)
-    .eq('order_id', orderId);
+  // ✅ Llamar al procedimiento almacenado optimizado
+  // Esto reemplaza 4 queries secuenciales por 1 sola transacción atómica
+  const { data, error } = await supabase.rpc('update_order_item_status_optimized', {
+    p_item_id: itemId,
+    p_new_status: newItemStatus,
+    p_order_id: orderId
+  });
 
-  if (updateItemError) {
-    throw new Error(`Error updating item status: ${updateItemError.message}`);
+  if (error) {
+    throw new Error(`Error updating item status: ${error.message}`);
   }
 
-  // 2. Obtener todos los items de la orden para verificar estados
-  const { data: allItems, error: itemsError } = await supabase
-    .from('order_items')
-    .select('item_status')
-    .eq('order_id', orderId);
-
-  if (itemsError) {
-    throw new Error(`Error fetching order items: ${itemsError.message}`);
+  if (!data || data.length === 0) {
+    throw new Error('Order not found after update');
   }
 
-  // 3. Lógica inteligente: Si todos los items están "Listos", actualizar la orden a "Listo"
-  const allItemsReady = allItems && allItems.length > 0 && 
-    allItems.every(item => item.item_status === 'Listo');
-
-  if (allItemsReady) {
-    const timestamp = Date.now();
-    await supabase
-      .from('orders')
-      .update({ status: 'Listo', timestamp })
-      .eq('id', orderId);
-  }
-
-  // 4. Retornar la orden completa actualizada
-  const { data: updatedOrder, error: orderError } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      order_items (
-        id,
-        menu_item_id,
-        menu_item_name,
-        price,
-        quantity,
-        notes,
-        item_status
-      )
-    `)
-    .eq('id', orderId)
-    .single();
-
-  if (orderError || !updatedOrder) {
-    throw new Error('Error fetching updated order');
-  }
-
-  return transformDbOrderToOrder(updatedOrder);
+  // Transformar el resultado del procedimiento almacenado
+  const orderData = data[0];
+  return {
+    id: orderData.id,
+    timestamp: orderData.timestamp,
+    status: orderData.status as Order['status'],
+    tableNumber: orderData.table_number,
+    orderType: orderData.order_type || 'Dine-In',
+    customerName: orderData.customer_name,
+    items: (orderData.order_items_json || []).map((item: any) => ({
+      id: item.id,
+      menuItemId: item.menuItemId,
+      menuItemName: item.menuItemName,
+      price: item.price,
+      quantity: item.quantity,
+      notes: item.notes,
+      itemStatus: item.itemStatus || 'Pendiente'
+    }))
+  };
 };
 
 /**
