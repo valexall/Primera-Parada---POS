@@ -77,9 +77,9 @@ export const registerUser = async (userData: RegisterRequest): Promise<RegisterR
     throw new Error('Rol inválido');
   }
 
-  // Hash del password
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
+  // ✅ OPTIMIZADO: Hash con 10 rounds (balance seguridad/performance)
+  // 10 rounds = ~100ms, 12 rounds = ~400ms, 14 rounds = ~1600ms
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   // Crear usuario
   const { data, error } = await supabase
