@@ -1,15 +1,34 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { financeService } from '../services/financeService';
 import { receiptService } from '../services/receiptService';
-import { DailySummary, Expense, Sale, Receipt as ReceiptType, SalesHistoryResponse } from '../types';
+import { DailySummary, Expense, Sale, Receipt as ReceiptType } from '../types';
+import { useCachedData } from '../hooks/useCachedData';
 import { TrendingUpIcon, TrendingDownIcon, WalletIcon, CalendarIcon, SearchIcon, ArrowDownCircleIcon, EyeIcon, ReceiptIcon, UtensilsIcon, PackageIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SkeletonCard } from '../components/ui/Loader';
 import Receipt from '../components/ui/Receipt';
 
 const DashboardPage: React.FC = () => {
-  const [summary, setSummary] = useState<DailySummary | null>(null);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  // ⚡ OPTIMIZACIÓN: Usar caché para resumen diario (30s)
+  const { 
+    data: summary, 
+    isLoading: summaryLoading,
+    refetch: refetchSummary 
+  } = useCachedData({
+    fetcher: () => financeService.getDailySummary(),
+    cacheDuration: 30000 // 30 segundos
+  });
+
+  // ⚡ OPTIMIZACIÓN: Usar caché para gastos (30s)
+  const {
+    data: expenses,
+    isLoading: expensesLoading,
+    refetch: refetchExpenses
+  } = useCachedData({
+    fetcher: () => financeService.getDailyExpenses(),
+    cacheDuration: 30000
+  });
+
   const [newExpense, setNewExpense] = useState({ description: '', amount: '', category: '' });
   const [history, setHistory] = useState<Sale[]>([]);
   const [dateRange, setDateRange] = useState({
@@ -24,36 +43,19 @@ const DashboardPage: React.FC = () => {
   const [totalRecords, setTotalRecords] = useState(0);
   const [limit] = useState(20); // Registros por página
   
-  // Estado explícito de carga
-  const [isLoading, setIsLoading] = useState(true);
+  // Estado explícito de carga para historial
+  const [historyLoading, setHistoryLoading] = useState(false);
+  
+  const isLoading = summaryLoading || expensesLoading || historyLoading;
 
   useEffect(() => {
-    loadData();
+    loadHistory();
   }, []);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      // Usamos Promise.all para cargar todo junto y evitar parpadeos
-      const [summaryData, expensesData, historyData] = await Promise.all([
-        financeService.getDailySummary(),
-        financeService.getDailyExpenses(),
-        financeService.getSalesHistory(dateRange.start, dateRange.end, currentPage, limit)
-      ]);
-
-      setSummary(summaryData);
-      setExpenses(expensesData);
-      setHistory(historyData.data);
-      setTotalPages(historyData.pagination.totalPages);
-      setTotalRecords(historyData.pagination.total);
-    } catch (error) {
-      toast.error('Error al cargar la información financiera');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // ❌ ELIMINADO: loadData() - Ahora usamos hooks con caché
 
   const loadHistory = async () => {
+    setHistoryLoading(true);
     try {
       // Resetear a página 1 cuando se cambian las fechas
       setCurrentPage(1);
@@ -63,6 +65,8 @@ const DashboardPage: React.FC = () => {
       setTotalRecords(historyData.pagination.total);
     } catch (error) {
       toast.error('Error al cargar el historial');
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -97,13 +101,10 @@ const DashboardPage: React.FC = () => {
     );
 
     setNewExpense({ description: '', amount: '', category: '' });
-    // Recargar solo los datos necesarios
-    const [summaryData, expensesData] = await Promise.all([
-        financeService.getDailySummary(),
-        financeService.getDailyExpenses()
-    ]);
-    setSummary(summaryData);
-    setExpenses(expensesData);
+    
+    // ⚡ OPTIMIZACIÓN: Invalidar caché y recargar
+    refetchSummary();
+    refetchExpenses();
   };
 
   const handleViewReceipt = async (saleId: string) => {
@@ -234,13 +235,13 @@ const DashboardPage: React.FC = () => {
                     </div>
                 ) : (
                     <>
-                        {expenses.map(exp => (
+                        {expenses && expenses.map(exp => (
                         <li key={exp.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 flex justify-between items-center text-sm">
                             <span className="font-medium text-slate-700 dark:text-slate-300">{exp.description}</span>
                             <span className="text-red-600 dark:text-red-400 font-bold">- S/. {Number(exp.amount).toFixed(2)}</span>
                         </li>
                         ))}
-                        {expenses.length === 0 && <li className="text-slate-400 dark:text-slate-500 text-sm italic">Sin movimientos.</li>}
+                        {(!expenses || expenses.length === 0) && <li className="text-slate-400 dark:text-slate-500 text-sm italic">Sin movimientos.</li>}
                     </>
                 )}
              </ul>

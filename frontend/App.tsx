@@ -3,6 +3,7 @@ import Layout from './components/layout/Layout';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { MenuProvider } from './context/MenuContext';
 import { ROUTES } from './constants/routes';
 import { Toaster } from 'react-hot-toast'; // <--- IMPORTANTE
 
@@ -28,8 +29,9 @@ export function App() {
     >
       <ThemeProvider>
         <AuthProvider>
-          {/* CONFIGURACIÓN DE ALERTAS (TOASTS) */}
-          <Toaster 
+          <MenuProvider>
+            {/* CONFIGURACIÓN DE ALERTAS (TOASTS) */}
+            <Toaster 
             position="top-center"
             reverseOrder={false}
             toastOptions={{
@@ -95,7 +97,8 @@ export function App() {
             </ProtectedRoute>
           } />
         </Routes>
-      </AuthProvider>
+          </MenuProvider>
+        </AuthProvider>
       </ThemeProvider>
     </Router>
   );

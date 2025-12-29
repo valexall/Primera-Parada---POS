@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XIcon, PlusIcon, MinusIcon, Trash2Icon, SaveIcon, PackagePlusIcon } from 'lucide-react';
 import { Order, OrderItem, MenuItem } from '../../types';
-import { menuService } from '../../services/menuService';
+import { useMenu } from '../../context/MenuContext';
 import toast from 'react-hot-toast';
 
 interface EditOrderModalProps {
@@ -14,21 +14,19 @@ interface EditOrderModalProps {
 
 const EditOrderModal: React.FC<EditOrderModalProps> = ({ order, isOpen, onClose, onSave }) => {
   const [editedItems, setEditedItems] = useState<OrderItem[]>([]);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  // ⚡ USAR CONTEXT EN LUGAR DE LOCAL STATE
+  const { menuItems } = useMenu();
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setEditedItems([...order.items]);
-      loadMenu();
+      // ❌ ELIMINADO: loadMenu();
     }
   }, [isOpen, order]);
 
-  const loadMenu = async () => {
-    const items = await menuService.getAll();
-    setMenuItems(items);
-  };
+  // ❌ ELIMINADO: const loadMenu = async () => { ... };
 
   const updateQuantity = (menuItemId: string, delta: number) => {
     setEditedItems(curr => 

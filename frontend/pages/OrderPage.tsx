@@ -1,14 +1,17 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { PlusIcon, MinusIcon, Trash2Icon, ShoppingBagIcon, ChevronRightIcon, XIcon, ChevronDownIcon, UtensilsIcon, PackageIcon, ZapIcon } from 'lucide-react';
 import { MenuItem, OrderItem } from '../types';
 import { menuService } from '../services/menuService';
 import { orderService } from '../services/orderService';
+import { useMenu } from '../context/MenuContext';
 import { CategoryTabs } from '../components/common/CategoryTabs';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const OrderPage: React.FC = () => {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  // ⚡ USAR CONTEXT EN LUGAR DE LOCAL STATE
+  const { menuItems } = useMenu();
+  
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
@@ -28,14 +31,8 @@ const OrderPage: React.FC = () => {
   const TABLES = ['1', '2', '3', '4', '5', '6', 'Barra 1', 'Delivery'];
   const CATEGORIES = ['Todos', 'Entradas', 'Fondos', 'Bebidas', 'Postres', 'Extras'];
 
-  useEffect(() => {
-    loadMenu();
-  }, []);
-
-  const loadMenu = async () => {
-    const items = await menuService.getAll();
-    setMenuItems(items);
-  };
+  // ❌ ELIMINADO: useEffect(() => { loadMenu(); }, []);
+  // ❌ ELIMINADO: const loadMenu = async () => { ... };
 
   const filteredItems = useMemo(() => {
     if (selectedCategory === 'Todos') return menuItems;
@@ -92,7 +89,7 @@ const OrderPage: React.FC = () => {
         }
         
         menuItemId = newMenuItem.id;
-        await loadMenu(); // Recargar el menú para mostrar el nuevo item
+        // ✅ No se necesita loadMenu() - Realtime lo manejará
         toast.success(`${customItemName} agregado al menú permanentemente`, { 
           icon: '📋',
           position: 'bottom-center',

@@ -1,23 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, SearchIcon, XIcon, SaveIcon, XCircleIcon, CheckCircleIcon } from 'lucide-react';
 import { MenuItem } from '../types';
 import { menuService } from '../services/menuService';
+import { useMenu } from '../context/MenuContext';
 import toast from 'react-hot-toast';
 
 const MenuPage: React.FC = () => {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  // ⚡ USAR CONTEXT EN LUGAR DE LOCAL STATE
+  const { menuItems, updateMenuItemLocal } = useMenu();
+  
   const [searchTerm, setSearchTerm] = useState('');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', price: '' });
 
-  useEffect(() => { loadMenu(); }, []);
-
-  const loadMenu = async () => {
-    const items = await menuService.getAll();
-    setMenuItems(items);
-  };
+  // ❌ ELIMINADO: useEffect(() => { loadMenu(); }, []);
+  // ❌ ELIMINADO: const loadMenu = async () => { ... };
 
   const openModal = (item?: MenuItem) => {
     if (item) {
@@ -36,14 +35,17 @@ const MenuPage: React.FC = () => {
     
     try {
       if (editingId) {
+        // Optimistic update
+        updateMenuItemLocal(editingId, { name: formData.name, price: parseFloat(formData.price) });
+        
         await menuService.update(editingId, { name: formData.name, price: parseFloat(formData.price) });
         toast.success('Plato actualizado');
       } else {
         await menuService.create({ name: formData.name, price: parseFloat(formData.price) });
         toast.success('Plato creado');
+        // ✅ No se necesita loadMenu() - Realtime lo manejará
       }
       setIsModalOpen(false);
-      loadMenu();
     } catch (e) {
       toast.error('Error al guardar');
     }
@@ -69,7 +71,7 @@ const MenuPage: React.FC = () => {
               toast.dismiss(t.id);
               await menuService.delete(id);
               toast.success('Plato eliminado');
-              loadMenu();
+              // ✅ No se necesita loadMenu() - Realtime lo manejará
             }}
             className="flex-1 px-3 py-2 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 shadow-md shadow-red-200"
           >
@@ -86,14 +88,20 @@ const MenuPage: React.FC = () => {
 
   const handleToggleAvailability = async (item: MenuItem) => {
     const newAvailability = !item.is_available;
+    
+    // Optimistic update
+    updateMenuItemLocal(item.id, { is_available: newAvailability });
+    
     const result = await menuService.toggleAvailability(item.id, newAvailability);
     
     if (result) {
       toast.success(newAvailability ? `${item.name} marcado como disponible` : `${item.name} marcado como agotado`, {
         icon: newAvailability ? '✅' : '❌'
       });
-      loadMenu();
+      // ✅ No se necesita loadMenu() - Realtime lo manejará
     } else {
+      // Revertir si falla
+      updateMenuItemLocal(item.id, { is_available: item.is_available });
       toast.error('Error al actualizar disponibilidad');
     }
   };
