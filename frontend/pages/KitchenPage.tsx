@@ -16,6 +16,7 @@ const KitchenPage: React.FC = () => {
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
   const [dailyStats, setDailyStats] = useState<{ name: string; quantity: number }[]>([]);
   const [showStats, setShowStats] = useState(false);
+  const [lastLocalUpdate, setLastLocalUpdate] = useState<{ orderId: string; timestamp: number } | null>(null);
 
   const loadOrders = useCallback(async (isInitial = false) => {
     if (isInitial) setIsLoading(true);
@@ -137,6 +138,13 @@ const KitchenPage: React.FC = () => {
           
           if (!orderId) return;
           
+          // Evitar actualizar si acabamos de hacer un cambio local (dentro de 1 segundo)
+          if (lastLocalUpdate && 
+              lastLocalUpdate.orderId === orderId && 
+              Date.now() - lastLocalUpdate.timestamp < 1000) {
+            return;
+          }
+          
           const fullOrder = await orderService.getById(orderId);
           const shouldDisplay = filter === 'Todos' || fullOrder.status === filter;
           
@@ -160,7 +168,7 @@ const KitchenPage: React.FC = () => {
       .subscribe();
       
     return () => { supabaseClient.removeChannel(channel); };
-  }, [filter]);
+  }, [filter, lastLocalUpdate]);
 
   const loadDailyStats = async () => {
     try {
@@ -205,6 +213,12 @@ const KitchenPage: React.FC = () => {
     }));
 
     try {
+      // Si el item no tiene ID, significa que fue recién agregado y necesitamos recargar la orden primero
+      if (!itemId || itemId === 'undefined') {
+        toast.error('Espera un momento, el plato se está sincronizando...');
+        return;
+      }
+      
       await orderService.updateItemStatus(orderId, itemId, newStatus);
       
       toast.success('Plato marcado como listo', {
@@ -222,8 +236,39 @@ const KitchenPage: React.FC = () => {
   };
 
   const handleUpdateOrder = async (orderId: string, items: OrderItem[]) => {
-    await orderService.updateItems(orderId, items);
-    // No se necesita loadOrders() - Realtime lo manejará
+    // Marcar actualización local para evitar conflictos con realtime
+    setLastLocalUpdate({ orderId, timestamp: Date.now() });
+    
+    // Optimistic Update: Actualizar UI inmediatamente
+    setOrders(current => current.map(order => {
+      if (order.id === orderId) {
+        return {
+          ...order,
+          items: items,
+          total: items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+        };
+      }
+      return order;
+    }));
+
+    try {
+      await orderService.updateItems(orderId, items);
+      
+      // Recargar la orden desde el backend para obtener los IDs correctos de los items
+      const updatedOrder = await orderService.getById(orderId);
+      setOrders(current => current.map(order => 
+        order.id === orderId ? updatedOrder : order
+      ));
+      
+      // Limpiar el marcador después de 1 segundo
+      setTimeout(() => setLastLocalUpdate(null), 1000);
+    } catch (error) {
+      console.error('Error updating order items:', error);
+      toast.error('Error al actualizar el pedido');
+      setLastLocalUpdate(null);
+      // Revertir en caso de error
+      await loadOrders(false);
+    }
   };
 
   const handleDeleteOrder = async (orderId: string) => {
@@ -413,15 +458,19 @@ const KitchenPage: React.FC = () => {
                 
                 return (
                   <div 
-                    key={item.id || index} 
-                    className={`flex justify-between items-center p-3 rounded-lg transition-all cursor-pointer ${
+                    key={item.id || `${item.menuItemId}-${index}`} 
+                    className={`flex justify-between items-center p-3 rounded-lg transition-all ${
                       isReady 
                         ? 'bg-green-100 dark:bg-green-900/30 border-2 border-green-400 dark:border-green-600' 
-                        : 'bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/80'
+                        : isPending && !item.id
+                        ? 'bg-yellow-50/50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 opacity-70'
+                        : 'bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer'
                     }`}
                     onClick={() => {
-                      if (item.id && isPending) {
+                      if (isPending && item.id) {
                         handleItemStatusChange(order.id, item.id, item.itemStatus || 'Pendiente');
+                      } else if (isPending && !item.id) {
+                        toast.error('Espera un momento, el plato se está sincronizando...', { duration: 2000 });
                       }
                     }}
                   >

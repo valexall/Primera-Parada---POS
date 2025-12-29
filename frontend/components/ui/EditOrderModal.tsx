@@ -59,7 +59,8 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({ order, isOpen, onClose,
         menuItemId: menuItem.id,
         menuItemName: menuItem.name,
         price: menuItem.price,
-        quantity: 1
+        quantity: 1,
+        itemStatus: 'Pendiente' // Agregar estado por defecto para nuevos items
       }]);
       toast.success(`${menuItem.name} agregado`, { icon: '✅', duration: 2000 });
     }

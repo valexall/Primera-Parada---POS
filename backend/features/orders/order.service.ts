@@ -122,8 +122,8 @@ export const getOrderById = async (id: string): Promise<Order> => {
         menu_item_id,
         menu_item_name,
         price,
-        quant,
-        item_statusity,
+        quantity,
+        item_status,
         notes
       )
     `)
@@ -307,7 +307,7 @@ export const updateOrderItems = async (orderId: string, itemsData: UpdateOrderIt
   // Esto reemplaza DELETE + INSERT por operaciones atómicas inteligentes
   const { data, error } = await supabase.rpc('upsert_order_items_optimized', {
     p_order_id: orderId,
-    p_items: JSON.stringify(itemsJson)
+    p_items: itemsJson  // ⚠️ NO usar JSON.stringify - Supabase lo maneja automáticamente
   });
 
   if (error) {
