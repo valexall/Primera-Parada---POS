@@ -10,7 +10,7 @@ export const createSale = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Faltan datos requeridos' });
     }
 
-    // 1. Registrar la venta en la tabla 'sales'
+    // Paso 1: Registro de la venta en la tabla 'sales'
     const { data: saleData, error: saleError } = await supabase
       .from('sales')
       .insert([
