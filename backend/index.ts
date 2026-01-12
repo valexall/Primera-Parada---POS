@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 
-// ✅ Importar desde la nueva arquitectura de features (Vertical Slices)
+// Rutas organizadas por features (arquitectura Vertical Slice)
 import authRoutes from './features/auth/auth.routes';
 import menuRoutes from './features/menu/menu.routes';
 import orderRoutes from './features/orders/order.routes';
@@ -13,18 +13,17 @@ import inventoryRoutes from './features/inventory/inventory.routes';
 import receiptRoutes from './features/receipts/receipts.routes';
 import menuHistoryRoutes from './features/menu-history/menu-history.routes';
 
-// ✅ Sistema robusto de manejo de errores
+// Middleware centralizado de manejo de errores
 import { errorHandler, notFoundHandler, errorMetrics } from './middleware/errorHandler';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
-// ✅ Routes - Todas desde features/
+// Registro de rutas de la API
 app.use('/api/auth', authRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
@@ -35,7 +34,6 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/receipts', receiptRoutes);
 app.use('/api/menu-history', menuHistoryRoutes);
 
-// Health check
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -45,7 +43,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 📊 Endpoint de métricas de errores (proteger en producción)
+// Métricas resumidas de errores (solo para debugging)
 app.get('/api/metrics/errors', (req, res) => {
   const summary = errorMetrics.getSummary();
   res.json({
@@ -54,7 +52,7 @@ app.get('/api/metrics/errors', (req, res) => {
   });
 });
 
-// 📊 Endpoint de métricas completas (proteger en producción)
+// Métricas detalladas de errores (uso interno)
 app.get('/api/metrics/errors/full', (req, res) => {
   const fullMetrics = errorMetrics.getMetrics();
   res.json({
@@ -63,12 +61,10 @@ app.get('/api/metrics/errors/full', (req, res) => {
   });
 });
 
-// ✅ Manejador de rutas no encontradas (404)
-// DEBE ir después de todas las rutas pero antes del error handler
+// Middleware 404: rutas no encontradas (debe ir antes del error handler)
 app.use(notFoundHandler);
 
-// ✅ Middleware global de manejo de errores
-// DEBE ser el último middleware registrado
+// Middleware global de errores (debe ser el último)
 app.use(errorHandler);
 
 const server = app.listen(PORT, () => {
