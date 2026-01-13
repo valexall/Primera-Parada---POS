@@ -15,4 +15,10 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
   },
+
+  preview: {
+    allowedHosts: true, 
+    host: true,         
+    port: 4173         
+  }
 })
