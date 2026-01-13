@@ -1,0 +1,49 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "nixpacksPlan": {
+      "phases": {
+        "setup": {
+          "nixPkgs": ["nodejs-18_x"]
+        },
+        "install": {
+          "cmds": ["npm install"]
+        },
+        "build": {
+          "cmds": ["npm run build"]
+        }
+      }
+    }
+  },
+  "deploy": {
+    "startCommand": "npm run preview -- --host --port $PORT",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  },
+  "services": [
+    {
+      "name": "backend-api",
+      "rootDirectory": "/backend",
+      "build": {
+        "buildCommand": "npm install && npm run build"
+      },
+      "deploy": {
+        "startCommand": "npm run start:prod"
+      },
+      "variables": {
+        "NODE_ENV": "production",
+        "PORT": "3001"
+      }
+    },
+    {
+      "name": "frontend-web",
+      "rootDirectory": "/",
+      "build": {
+        "buildCommand": "npm install && npm run build"
+      },
+      "deploy": {
+        "startCommand": "npm run preview -- --host --port $PORT"
+      }
+    }
+  ]
+}
