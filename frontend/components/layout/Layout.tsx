@@ -99,17 +99,35 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <NavLinks />
         </nav>
 
-        <div className="mt-auto pt-6 border-t border-slate-100 dark:border-slate-700 space-y-2">
-          <button 
-            onClick={toggleTheme} 
-            className="w-full flex items-center justify-center gap-2 p-3 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm font-bold"
-          >
-            {theme === 'dark' ? <SunIcon size={18} /> : <MoonIcon size={18} />}
-            {theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
-          </button>
-          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 p-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-colors text-sm font-bold">
-            <LogOutIcon size={18} /> Cerrar Sesión
-          </button>
+        <div className="mt-auto pt-6 border-t border-slate-100 dark:border-slate-700 space-y-3">
+          {/* Información del usuario */}
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900 rounded-full flex items-center justify-center text-amber-700 dark:text-amber-300 font-bold text-base border border-amber-200 dark:border-amber-700 shrink-0">
+              {user?.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{user?.name}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">{user?.role === 'admin' ? 'Administrador' : 'Personal'}</p>
+            </div>
+          </div>
+          
+          {/* Botones de acción */}
+          <div className="space-y-1.5">
+            <button 
+              onClick={toggleTheme} 
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm font-medium"
+            >
+              {theme === 'dark' ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+              <span>{theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}</span>
+            </button>
+            <button 
+              onClick={handleLogout} 
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-sm font-medium"
+            >
+              <LogOutIcon size={18} /> 
+              <span>Cerrar Sesión</span>
+            </button>
+          </div>
         </div>
       </aside>
 
