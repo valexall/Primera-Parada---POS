@@ -185,9 +185,9 @@ const Receipt: React.FC<ReceiptProps> = ({ receipt, onClose }) => {
             {/* Company Header */}
             <div className="text-center mb-4 pb-4 border-b-2 border-slate-800 dark:border-slate-300">
               <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">PRIMERA PARADA</h3>
-              <p className="text-xs text-slate-700 dark:text-slate-300">Restaurant & Café</p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Av. Principal #123, Abancay</p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Tel: (083) 123-456</p>
+              <p className="text-xs text-slate-700 dark:text-slate-300">Restaurante Criollo</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Av. Urubamba - Chalhuanca</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Tel: 967359452</p>
             </div>
 
             {/* Receipt Info */}
@@ -263,9 +263,9 @@ const Receipt: React.FC<ReceiptProps> = ({ receipt, onClose }) => {
               {/* Company Header */}
               <div className="header">
                 <div className="company-name">PRIMERA PARADA</div>
-                <div className="company-info">Restaurant & Café</div>
-                <div className="company-info">Av. Principal #123, Abancay</div>
-                <div className="company-info">Tel: (083) 123-456</div>
+                <div className="company-info">Restaurante Criollo</div>
+                <div className="company-info">Av. Urubamba - Chalhuanca</div>
+                <div className="company-info">Tel: 967359452</div>
               </div>
 
               {/* Receipt Info */}

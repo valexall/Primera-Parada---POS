@@ -195,3 +195,30 @@ export interface RevenueTrend {
   total_orders: number;
   avg_order_value: number;
 }
+
+export interface CategoryPerformance {
+  category: string;
+  total_quantity: number;
+  total_revenue: number;
+  items_count: number;
+  avg_price: number;
+  percentage_of_total: number;
+}
+
+export interface HourlySalesPattern {
+  hour: number;
+  orders_count: number;
+  revenue: number;
+  avg_order_value: number;
+}
+
+export interface DayComparison {
+  previous_date: string;
+  current_date: string;
+  revenue_change: number;
+  revenue_change_percent: number;
+  orders_change: number;
+  orders_change_percent: number;
+  items_sold_change: number;
+  items_sold_change_percent: number;
+}

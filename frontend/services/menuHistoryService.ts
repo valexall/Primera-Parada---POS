@@ -3,14 +3,17 @@ import {
   MenuHistorySnapshot, 
   MenuHistoryResponse, 
   TopSellingItem, 
-  RevenueTrend 
+  RevenueTrend,
+  CategoryPerformance,
+  HourlySalesPattern,
+  DayComparison
 } from '../types';
 
 export const menuHistoryService = {
   // Generate or update snapshot for a specific date
   generateSnapshot: async (date?: string, notes?: string): Promise<MenuHistorySnapshot | null> => {
     try {
-      const response = await api.post('/menu-history/generate', { date, notes });
+      const response = await api.post('/menu-history/snapshot', { date, notes });
       return response.data.data;
     } catch (error) {
       console.error('Error generating snapshot:', error);
@@ -97,6 +100,56 @@ export const menuHistoryService = {
     } catch (error) {
       console.error('Error fetching revenue trends:', error);
       return [];
+    }
+  },
+
+  // Get category performance
+  getCategoryPerformance: async (params?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<CategoryPerformance[]> => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.startDate) queryParams.append('startDate', params.startDate);
+      if (params?.endDate) queryParams.append('endDate', params.endDate);
+
+      const response = await api.get(`/menu-history/analytics/category-performance?${queryParams.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching category performance:', error);
+      return [];
+    }
+  },
+
+  // Get hourly sales pattern
+  getHourlySalesPattern: async (params?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<HourlySalesPattern[]> => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.startDate) queryParams.append('startDate', params.startDate);
+      if (params?.endDate) queryParams.append('endDate', params.endDate);
+
+      const response = await api.get(`/menu-history/analytics/hourly-pattern?${queryParams.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching hourly sales pattern:', error);
+      return [];
+    }
+  },
+
+  // Compare snapshots
+  compareSnapshots: async (currentDate: string, previousDate?: string): Promise<DayComparison | null> => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (previousDate) queryParams.append('previousDate', previousDate);
+
+      const response = await api.get(`/menu-history/compare/${currentDate}?${queryParams.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error comparing snapshots:', error);
+      return null;
     }
   }
 };

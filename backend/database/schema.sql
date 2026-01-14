@@ -326,7 +326,7 @@ BEGIN
     SUM(oi.quantity)::BIGINT as quantity
   FROM order_items oi
   INNER JOIN orders o ON o.id = oi.order_id
-  WHERE o.status = 'Entregado' AND o.timestamp >= start_timestamp
+  WHERE o.status IN ('Entregado', 'Pagado') AND o.timestamp >= start_timestamp
   GROUP BY oi.menu_item_name
   ORDER BY quantity DESC;
 END;

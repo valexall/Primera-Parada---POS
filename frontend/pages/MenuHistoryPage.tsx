@@ -11,10 +11,23 @@ import {
   RefreshCwIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  DownloadIcon
+  DownloadIcon,
+  TrendingDownIcon,
+  ClockIcon,
+  PieChartIcon,
+  TargetIcon,
+  ArrowUpIcon,
+  ArrowDownIcon
 } from 'lucide-react';
 import { menuHistoryService } from '../services/menuHistoryService';
-import { MenuHistorySnapshot, TopSellingItem, RevenueTrend } from '../types';
+import { 
+  MenuHistorySnapshot, 
+  TopSellingItem, 
+  RevenueTrend,
+  CategoryPerformance,
+  HourlySalesPattern,
+  DayComparison
+} from '../types';
 import toast from 'react-hot-toast';
 
 const MenuHistoryPage: React.FC = () => {
@@ -22,6 +35,9 @@ const MenuHistoryPage: React.FC = () => {
   const [selectedSnapshot, setSelectedSnapshot] = useState<MenuHistorySnapshot | null>(null);
   const [topSellingItems, setTopSellingItems] = useState<TopSellingItem[]>([]);
   const [revenueTrends, setRevenueTrends] = useState<RevenueTrend[]>([]);
+  const [categoryPerformance, setCategoryPerformance] = useState<CategoryPerformance[]>([]);
+  const [hourlySalesPattern, setHourlySalesPattern] = useState<HourlySalesPattern[]>([]);
+  const [dayComparison, setDayComparison] = useState<DayComparison | null>(null);
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<'list' | 'detail' | 'analytics'>('list');
   
@@ -32,6 +48,9 @@ const MenuHistoryPage: React.FC = () => {
   // Filters
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  
+  // Generate snapshot date
+  const [generateDate, setGenerateDate] = useState('');
 
   useEffect(() => {
     loadSnapshots();
@@ -60,7 +79,7 @@ const MenuHistoryPage: React.FC = () => {
   };
 
   const loadAnalytics = async () => {
-    const [topItems, trends] = await Promise.all([
+    const [topItems, trends, categories, hourlyPattern] = await Promise.all([
       menuHistoryService.getTopSellingItems({
         startDate: startDate || undefined,
         endDate: endDate || undefined,
@@ -69,19 +88,35 @@ const MenuHistoryPage: React.FC = () => {
       menuHistoryService.getRevenueTrends({
         startDate: startDate || undefined,
         endDate: endDate || undefined
+      }),
+      menuHistoryService.getCategoryPerformance({
+        startDate: startDate || undefined,
+        endDate: endDate || undefined
+      }),
+      menuHistoryService.getHourlySalesPattern({
+        startDate: startDate || undefined,
+        endDate: endDate || undefined
       })
     ]);
     
     setTopSellingItems(topItems);
     setRevenueTrends(trends);
+    setCategoryPerformance(categories);
+    setHourlySalesPattern(hourlyPattern);
   };
 
   const handleGenerateSnapshot = async () => {
-    toast.loading('Generando snapshot del día...', { id: 'generate' });
-    const result = await menuHistoryService.generateSnapshot();
+    // Get local date in YYYY-MM-DD format
+    const today = new Date();
+    const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const dateToGenerate = generateDate || localDate;
+    
+    toast.loading(`Generando snapshot para ${formatDate(dateToGenerate)}...`, { id: 'generate' });
+    const result = await menuHistoryService.generateSnapshot(dateToGenerate);
     
     if (result) {
       toast.success('Snapshot generado exitosamente', { id: 'generate' });
+      setGenerateDate(''); // Clear the input
       loadSnapshots();
     } else {
       toast.error('Error al generar snapshot', { id: 'generate' });
@@ -91,10 +126,17 @@ const MenuHistoryPage: React.FC = () => {
   const handleViewSnapshot = async (snapshot: MenuHistorySnapshot) => {
     setSelectedSnapshot(snapshot);
     setView('detail');
+    
+    // Load comparison data
+    const comparison = await menuHistoryService.compareSnapshots(snapshot.snapshot_date);
+    setDayComparison(comparison);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-PE', {
+    // Parse date as local to avoid timezone issues
+    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('es-PE', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -153,12 +195,24 @@ const MenuHistoryPage: React.FC = () => {
             <BarChart3Icon size={16} className="inline mr-2" />
             Analytics
           </button>
+          
+          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-xl">
+            <CalendarIcon size={16} className="text-slate-600 dark:text-slate-400" />
+            <input
+              type="date"
+              value={generateDate}
+              onChange={(e) => setGenerateDate(e.target.value)}
+              placeholder="Fecha snapshot"
+              className="bg-transparent border-none outline-none text-slate-700 dark:text-slate-200 text-sm font-medium"
+            />
+          </div>
+          
           <button
             onClick={handleGenerateSnapshot}
             className="px-4 py-2 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 shadow-md transition-all text-sm flex items-center gap-2"
           >
             <PlusIcon size={16} />
-            Generar Snapshot
+            {generateDate ? 'Generar Snapshot' : 'Snapshot de Hoy'}
           </button>
         </div>
       </div>
@@ -224,9 +278,68 @@ const MenuHistoryPage: React.FC = () => {
                 <div className="p-12 text-center">
                   <CalendarIcon size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
                   <p className="text-slate-500 dark:text-slate-400">No hay snapshots disponibles</p>
+                  <p className="text-slate-400 dark:text-slate-500 text-sm mt-2">
+                    {startDate || endDate 
+                      ? 'No hay datos para el rango de fechas seleccionado. Prueba limpiando los filtros.'
+                      : 'Genera un snapshot para comenzar a analizar las ventas'
+                    }
+                  </p>
+                  {(startDate || endDate) && (
+                    <button
+                      onClick={() => {
+                        setStartDate('');
+                        setEndDate('');
+                      }}
+                      className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 shadow-md transition-all text-sm"
+                    >
+                      Limpiar Filtros
+                    </button>
+                  )}
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <>
+                  {/* Summary Stats Above Table */}
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-900 dark:to-slate-800 p-4 border-b border-slate-200 dark:border-slate-700">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-bold uppercase mb-1">
+                          Total Período
+                        </p>
+                        <p className="text-xl font-black text-green-600 dark:text-green-400">
+                          {formatCurrency(snapshots.reduce((sum, s) => sum + (Number(s.total_revenue) || 0), 0))}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-bold uppercase mb-1">
+                          Pedidos
+                        </p>
+                        <p className="text-xl font-black text-blue-600 dark:text-blue-400">
+                          {snapshots.reduce((sum, s) => sum + (Number(s.total_orders) || 0), 0)}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-bold uppercase mb-1">
+                          Promedio/Día
+                        </p>
+                        <p className="text-xl font-black text-purple-600 dark:text-purple-400">
+                          {formatCurrency(snapshots.length > 0 
+                            ? snapshots.reduce((sum, s) => sum + (Number(s.total_revenue) || 0), 0) / snapshots.length 
+                            : 0
+                          )}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-bold uppercase mb-1">
+                          Mejor Día
+                        </p>
+                        <p className="text-xl font-black text-orange-600 dark:text-orange-400">
+                          {formatCurrency(snapshots.length > 0 ? Math.max(...snapshots.map(s => Number(s.total_revenue) || 0)) : 0)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
                       <tr>
@@ -235,11 +348,34 @@ const MenuHistoryPage: React.FC = () => {
                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Pedidos</th>
                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Items Vendidos</th>
                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Hora Pico</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Desempeño</th>
                         <th className="px-6 py-4 text-right text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                      {snapshots.map(snapshot => (
+                      {snapshots.map((snapshot, index) => {
+                        const snapshotRevenue = Number(snapshot.total_revenue) || 0;
+                        
+                        // Compare with previous snapshot (if exists)
+                        let performancePercent = 0;
+                        let isAboveAverage = false;
+                        let canCompare = false;
+                        
+                        if (index < snapshots.length - 1) {
+                          const prevRevenue = Number(snapshots[index + 1].total_revenue) || 0;
+                          
+                          // Only compare if previous day had sales
+                          if (prevRevenue > 0) {
+                            performancePercent = ((snapshotRevenue - prevRevenue) / prevRevenue) * 100;
+                            isAboveAverage = performancePercent > 0;
+                            canCompare = true;
+                          } else if (snapshotRevenue > 0) {
+                            // Current day has sales but previous didn't - show as positive growth
+                            canCompare = false; // Don't show comparison with zero
+                          }
+                        }
+                        
+                        return (
                         <tr 
                           key={snapshot.id}
                           className="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors cursor-pointer"
@@ -255,7 +391,7 @@ const MenuHistoryPage: React.FC = () => {
                           </td>
                           <td className="px-6 py-4">
                             <span className="font-mono font-bold text-green-600 dark:text-green-400">
-                              {formatCurrency(snapshot.total_revenue)}
+                              {formatCurrency(snapshotRevenue)}
                             </span>
                           </td>
                           <td className="px-6 py-4">
@@ -269,6 +405,26 @@ const MenuHistoryPage: React.FC = () => {
                           <td className="px-6 py-4 text-slate-600 dark:text-slate-300 font-medium">
                             {formatHour(snapshot.peak_hour)}
                           </td>
+                          <td className="px-6 py-4">
+                            {canCompare ? (
+                              <div className="flex items-center gap-2">
+                                {isAboveAverage ? (
+                                  <TrendingUpIcon size={16} className="text-green-500" />
+                                ) : (
+                                  <TrendingDownIcon size={16} className="text-red-500" />
+                                )}
+                                <span className={`text-xs font-bold ${
+                                  isAboveAverage ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                                }`}>
+                                  {isAboveAverage ? '+' : ''}{performancePercent.toFixed(1)}%
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400 dark:text-slate-500 italic">
+                                Sin comparación
+                              </span>
+                            )}
+                          </td>
                           <td className="px-6 py-4 text-right">
                             <button
                               onClick={(e) => {
@@ -281,10 +437,12 @@ const MenuHistoryPage: React.FC = () => {
                             </button>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
+                </>
               )}
             </div>
 
@@ -327,19 +485,44 @@ const MenuHistoryPage: React.FC = () => {
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <DollarSignIcon size={20} className="text-green-500" />
-                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase">Ingresos Totales</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <DollarSignIcon size={20} className="text-green-500" />
+                    <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase">Ingresos Totales</span>
+                  </div>
+                  {dayComparison && (
+                    <span className={`text-xs font-bold flex items-center gap-1 ${
+                      dayComparison.revenue_change >= 0 ? 'text-green-500' : 'text-red-500'
+                    }`}>
+                      {dayComparison.revenue_change >= 0 ? <ArrowUpIcon size={12} /> : <ArrowDownIcon size={12} />}
+                      {Math.abs(dayComparison.revenue_change_percent).toFixed(1)}%
+                    </span>
+                  )}
                 </div>
                 <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
                   {formatCurrency(selectedSnapshot.total_revenue)}
                 </p>
+                {dayComparison && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    vs día anterior: {formatCurrency(Math.abs(dayComparison.revenue_change))}
+                  </p>
+                )}
               </div>
 
               <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <ShoppingBagIcon size={20} className="text-blue-500" />
-                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase">Pedidos</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <ShoppingBagIcon size={20} className="text-blue-500" />
+                    <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase">Pedidos</span>
+                  </div>
+                  {dayComparison && (
+                    <span className={`text-xs font-bold flex items-center gap-1 ${
+                      dayComparison.orders_change >= 0 ? 'text-green-500' : 'text-red-500'
+                    }`}>
+                      {dayComparison.orders_change >= 0 ? <ArrowUpIcon size={12} /> : <ArrowDownIcon size={12} />}
+                      {Math.abs(dayComparison.orders_change_percent).toFixed(1)}%
+                    </span>
+                  )}
                 </div>
                 <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
                   {selectedSnapshot.total_orders}
@@ -357,15 +540,21 @@ const MenuHistoryPage: React.FC = () => {
                 <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
                   {formatCurrency(selectedSnapshot.avg_order_value || 0)}
                 </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {selectedSnapshot.total_items_sold} items vendidos
+                </p>
               </div>
 
               <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
                 <div className="flex items-center gap-2 mb-2">
-                  <CalendarIcon size={20} className="text-orange-500" />
+                  <ClockIcon size={20} className="text-orange-500" />
                   <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase">Hora Pico</span>
                 </div>
                 <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
                   {formatHour(selectedSnapshot.peak_hour)}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Mayor actividad del día
                 </p>
               </div>
             </div>
@@ -431,6 +620,193 @@ const MenuHistoryPage: React.FC = () => {
         {/* Analytics View */}
         {view === 'analytics' && (
           <div className="space-y-6">
+            {/* KPIs Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg p-6 text-white">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSignIcon size={24} />
+                  <span className="text-sm font-bold uppercase opacity-90">Ingresos Totales</span>
+                </div>
+                <p className="text-3xl font-black">
+                  {formatCurrency(revenueTrends.reduce((sum, t) => sum + t.total_revenue, 0))}
+                </p>
+                <p className="text-sm opacity-80 mt-1">
+                  {revenueTrends.length} días analizados
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg p-6 text-white">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShoppingBagIcon size={24} />
+                  <span className="text-sm font-bold uppercase opacity-90">Pedidos Totales</span>
+                </div>
+                <p className="text-3xl font-black">
+                  {revenueTrends.reduce((sum, t) => sum + t.total_orders, 0)}
+                </p>
+                <p className="text-sm opacity-80 mt-1">
+                  Promedio: {revenueTrends.length > 0 ? Math.round(revenueTrends.reduce((sum, t) => sum + t.total_orders, 0) / revenueTrends.length) : 0}/día
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-lg p-6 text-white">
+                <div className="flex items-center gap-2 mb-2">
+                  <TargetIcon size={24} />
+                  <span className="text-sm font-bold uppercase opacity-90">Ticket Promedio</span>
+                </div>
+                <p className="text-3xl font-black">
+                  {formatCurrency(revenueTrends.length > 0 
+                    ? revenueTrends.reduce((sum, t) => sum + t.avg_order_value, 0) / revenueTrends.length 
+                    : 0)}
+                </p>
+                <p className="text-sm opacity-80 mt-1">
+                  General del período
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-lg p-6 text-white">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUpIcon size={24} />
+                  <span className="text-sm font-bold uppercase opacity-90">Items Vendidos</span>
+                </div>
+                <p className="text-3xl font-black">
+                  {topSellingItems.reduce((sum, item) => sum + item.total_quantity, 0)}
+                </p>
+                <p className="text-sm opacity-80 mt-1">
+                  Todos los productos
+                </p>
+              </div>
+            </div>
+
+            {/* Category Performance */}
+            {categoryPerformance.length > 0 && (
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <PieChartIcon size={24} className="text-purple-500" />
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                        Rendimiento por Categorías
+                      </h2>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Análisis de ventas por tipo de producto
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {categoryPerformance.map((category, index) => (
+                      <div 
+                        key={category.category}
+                        className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">
+                            {category.category}
+                          </h3>
+                          <span className="text-2xl">
+                            {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📊'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-slate-500 dark:text-slate-400 mb-1">Cantidad</p>
+                            <p className="font-bold text-slate-800 dark:text-slate-100">
+                              {category.total_quantity} unidades
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500 dark:text-slate-400 mb-1">Ingresos</p>
+                            <p className="font-bold text-green-600 dark:text-green-400">
+                              {formatCurrency(category.total_revenue)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500 dark:text-slate-400 mb-1">Precio Prom.</p>
+                            <p className="font-mono text-slate-700 dark:text-slate-200">
+                              {formatCurrency(category.avg_price)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500 dark:text-slate-400 mb-1">% del Total</p>
+                            <p className="font-bold text-blue-600 dark:text-blue-400">
+                              {category.percentage_of_total.toFixed(1)}%
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-3 bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                          <div 
+                            className="bg-gradient-to-r from-blue-500 to-purple-500 h-full transition-all"
+                            style={{ width: `${category.percentage_of_total}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Hourly Sales Pattern */}
+            {hourlySalesPattern.length > 0 && (
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <ClockIcon size={24} className="text-blue-500" />
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                        Patrón de Ventas por Hora
+                      </h2>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Distribución de pedidos durante el día
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                    {hourlySalesPattern
+                      .filter(h => h.orders_count > 0)
+                      .sort((a, b) => a.hour - b.hour)
+                      .map((hourData) => {
+                        const maxOrders = Math.max(...hourlySalesPattern.map(h => h.orders_count));
+                        const intensity = (hourData.orders_count / maxOrders) * 100;
+                        const isHighActivity = intensity > 70;
+                        
+                        return (
+                          <div 
+                            key={hourData.hour}
+                            className={`rounded-xl p-3 border-2 transition-all ${
+                              isHighActivity
+                                ? 'bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30 border-orange-500 shadow-md'
+                                : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700'
+                            }`}
+                          >
+                            <div className="text-center">
+                              <p className={`text-xs font-bold mb-1 ${
+                                isHighActivity ? 'text-orange-700 dark:text-orange-300' : 'text-slate-500 dark:text-slate-400'
+                              }`}>
+                                {formatHour(hourData.hour)}
+                              </p>
+                              <p className={`text-lg font-black ${
+                                isHighActivity ? 'text-orange-600 dark:text-orange-400' : 'text-slate-800 dark:text-slate-100'
+                              }`}>
+                                {hourData.orders_count}
+                              </p>
+                              <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
+                                {formatCurrency(hourData.revenue)}
+                              </p>
+                              {isHighActivity && (
+                                <span className="text-xs">🔥</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Top Selling Items */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
               <div className="p-6 border-b border-slate-200 dark:border-slate-700">

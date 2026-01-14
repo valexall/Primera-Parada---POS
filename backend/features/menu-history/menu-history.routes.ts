@@ -5,7 +5,10 @@ import {
   getSnapshotByDate,
   deleteSnapshot,
   getTopSellingItems,
-  getRevenueTrends
+  getRevenueTrends,
+  getCategoryPerformance,
+  getHourlySalesPattern,
+  compareSnapshots
 } from './menu-history.controller';
 import { verifyToken } from '../../middleware/authMiddleware';
 
@@ -47,6 +50,24 @@ router.get('/analytics/top-selling', getTopSellingItems);
  * IMPORTANTE: Esta ruta debe ir ANTES de /snapshots/:date para evitar conflictos
  */
 router.get('/analytics/revenue-trends', getRevenueTrends);
+
+/**
+ * GET /api/menu-history/analytics/category-performance
+ * Obtiene el rendimiento por categorías de menú
+ */
+router.get('/analytics/category-performance', getCategoryPerformance);
+
+/**
+ * GET /api/menu-history/analytics/hourly-pattern
+ * Obtiene patrones de ventas por hora
+ */
+router.get('/analytics/hourly-pattern', getHourlySalesPattern);
+
+/**
+ * GET /api/menu-history/compare/:currentDate
+ * Compara snapshots (día actual vs día anterior o fecha específica)
+ */
+router.get('/compare/:currentDate', compareSnapshots);
 
 /**
  * GET /api/menu-history/date/:date

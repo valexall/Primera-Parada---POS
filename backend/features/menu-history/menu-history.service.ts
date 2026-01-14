@@ -8,7 +8,10 @@ import type {
   SnapshotFilters,
   TopSellingFilters,
   RevenueTrendFilters,
-  PaginatedResponse
+  PaginatedResponse,
+  CategoryPerformance,
+  HourlySalesPattern,
+  DayComparison
 } from './menu-history.types';
 
 /**
@@ -35,15 +38,15 @@ export const generateSnapshot = async (
     throw new Error(`Error fetching menu items: ${menuError.message}`);
   }
 
-  // 2. Get all orders for the specified date
-  const startOfDay = `${snapshotDate}T00:00:00`;
-  const endOfDay = `${snapshotDate}T23:59:59`;
+  // 2. Get all orders for the specified date using timestamp field
+  const startOfDay = new Date(`${snapshotDate}T00:00:00`).getTime();
+  const endOfDay = new Date(`${snapshotDate}T23:59:59`).getTime();
 
   const { data: orders, error: ordersError } = await supabase
     .from('orders')
     .select('*')
-    .gte('created_at', startOfDay)
-    .lte('created_at', endOfDay);
+    .gte('timestamp', startOfDay)
+    .lte('timestamp', endOfDay);
 
   if (ordersError) {
     throw new Error(`Error fetching orders: ${ordersError.message}`);
@@ -89,21 +92,33 @@ export const generateSnapshot = async (
     }
   });
 
-  // 5. Calculate aggregated metrics
-  const totalRevenue = orders?.reduce((sum, order) => sum + parseFloat(order.total_price || 0), 0) || 0;
+  // 5. Calculate aggregated metrics from sales table
+  let totalRevenue = 0;
+  
+  if (orderIds.length > 0) {
+    const { data: salesData, error: salesError } = await supabase
+      .from('sales')
+      .select('total_amount')
+      .in('order_id', orderIds);
+    
+    if (!salesError && salesData) {
+      totalRevenue = salesData.reduce((sum, sale) => sum + parseFloat(sale.total_amount || 0), 0);
+    }
+  }
+  
   const totalOrders = orders?.length || 0;
 
-  // Count order types
-  const dineInOrders = orders?.filter(o => o.order_type === 'dine-in').length || 0;
-  const takeawayOrders = orders?.filter(o => o.order_type === 'takeaway').length || 0;
+  // Count order types (match schema values)
+  const dineInOrders = orders?.filter(o => o.order_type === 'Dine-In').length || 0;
+  const takeawayOrders = orders?.filter(o => o.order_type === 'Takeaway').length || 0;
 
   // Calculate average order value
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-  // Find peak hour (hour with most orders)
+  // Find peak hour (hour with most orders) - use timestamp field
   const hourCounts: { [key: number]: number } = {};
   orders?.forEach(order => {
-    const hour = new Date(order.created_at).getHours();
+    const hour = new Date(order.timestamp).getHours();
     hourCounts[hour] = (hourCounts[hour] || 0) + 1;
   });
 
@@ -324,4 +339,224 @@ export const getRevenueTrends = async (
   }
 
   return data || [];
+};
+
+/**
+ * Obtiene el rendimiento por categorías de menú
+ */
+export const getCategoryPerformance = async (
+  filters: TopSellingFilters
+): Promise<CategoryPerformance[]> => {
+  const { startDate, endDate } = filters;
+
+  let query = supabase
+    .from('menu_history')
+    .select('sales_stats, menu_items, total_revenue');
+
+  if (startDate) {
+    query = query.gte('snapshot_date', startDate);
+  }
+  if (endDate) {
+    query = query.lte('snapshot_date', endDate);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(`Error fetching category performance: ${error.message}`);
+  }
+
+  // Aggregate by category
+  const categoryMap: any = {};
+  let totalRevenue = 0;
+
+  data?.forEach(snapshot => {
+    totalRevenue += snapshot.total_revenue;
+    const stats = snapshot.sales_stats as any[];
+    const menuItems = snapshot.menu_items as any[];
+
+    stats.forEach(stat => {
+      const menuItem = menuItems.find((item: any) => item.id === stat.menu_item_id);
+      if (menuItem) {
+        const category = menuItem.category || 'Sin categoría';
+        
+        if (!categoryMap[category]) {
+          categoryMap[category] = {
+            category,
+            total_quantity: 0,
+            total_revenue: 0,
+            items_count: 0,
+            prices: []
+          };
+        }
+
+        categoryMap[category].total_quantity += stat.quantity_sold;
+        categoryMap[category].total_revenue += stat.revenue;
+        categoryMap[category].items_count += 1;
+        categoryMap[category].prices.push(stat.price);
+      }
+    });
+  });
+
+  // Calculate averages and percentages
+  const categories: CategoryPerformance[] = Object.values(categoryMap).map((cat: any) => ({
+    category: cat.category,
+    total_quantity: cat.total_quantity,
+    total_revenue: cat.total_revenue,
+    items_count: cat.items_count,
+    avg_price: cat.prices.reduce((sum: number, p: number) => sum + p, 0) / cat.prices.length,
+    percentage_of_total: totalRevenue > 0 ? (cat.total_revenue / totalRevenue) * 100 : 0
+  }));
+
+  return categories.sort((a, b) => b.total_revenue - a.total_revenue);
+};
+
+/**
+ * Obtiene patrones de ventas por hora
+ */
+export const getHourlySalesPattern = async (
+  filters: TopSellingFilters
+): Promise<HourlySalesPattern[]> => {
+  const { startDate, endDate } = filters;
+
+  try {
+    // Get orders within date range using timestamp field
+    let query = supabase
+      .from('orders')
+      .select('id, timestamp')
+      .in('status', ['Pagado', 'Entregado']);
+
+    if (startDate) {
+      const startTimestamp = new Date(`${startDate}T00:00:00`).getTime();
+      query = query.gte('timestamp', startTimestamp);
+    }
+    if (endDate) {
+      const endTimestamp = new Date(`${endDate}T23:59:59`).getTime();
+      query = query.lte('timestamp', endTimestamp);
+    }
+
+    const { data: orders, error: ordersError } = await query;
+
+    if (ordersError) {
+      console.error('Error fetching orders for hourly pattern:', ordersError);
+      // Return empty pattern instead of throwing
+      return Array.from({ length: 24 }, (_, i) => ({
+        hour: i,
+        orders_count: 0,
+        revenue: 0,
+        avg_order_value: 0
+      }));
+    }
+
+    // Get sales for these orders
+    const orderIds = orders?.map(o => o.id) || [];
+    let salesData: any[] = [];
+    
+    if (orderIds.length > 0) {
+      const { data: sales, error: salesError } = await supabase
+        .from('sales')
+        .select('order_id, total_amount')
+        .in('order_id', orderIds);
+      
+      if (!salesError && sales) {
+        salesData = sales;
+      }
+    }
+
+    // Create a map of order_id to sales data
+    const salesMap = new Map();
+    salesData.forEach(sale => {
+      salesMap.set(sale.order_id, parseFloat(sale.total_amount || 0));
+    });
+
+    // Group by hour
+    const hourlyData: any = {};
+    
+    for (let i = 0; i < 24; i++) {
+      hourlyData[i] = {
+        hour: i,
+        orders_count: 0,
+        revenue: 0
+      };
+    }
+
+    orders?.forEach((order: any) => {
+      const hour = new Date(order.timestamp).getHours();
+      hourlyData[hour].orders_count += 1;
+      const saleAmount = salesMap.get(order.id) || 0;
+      hourlyData[hour].revenue += saleAmount;
+    });
+
+    // Calculate averages
+    const pattern: HourlySalesPattern[] = Object.values(hourlyData).map((data: any) => ({
+      hour: data.hour,
+      orders_count: data.orders_count,
+      revenue: data.revenue,
+      avg_order_value: data.orders_count > 0 ? data.revenue / data.orders_count : 0
+    }));
+
+    return pattern;
+  } catch (error) {
+    console.error('Error in getHourlySalesPattern:', error);
+    // Return empty pattern on any error
+    return Array.from({ length: 24 }, (_, i) => ({
+      hour: i,
+      orders_count: 0,
+      revenue: 0,
+      avg_order_value: 0
+    }));
+  }
+};
+
+/**
+ * Compara dos snapshots (día actual vs día anterior)
+ */
+export const compareSnapshots = async (
+  currentDate: string,
+  previousDate?: string
+): Promise<DayComparison | null> => {
+  // If no previous date provided, calculate it (1 day before)
+  let prevDate = previousDate;
+  if (!prevDate) {
+    const current = new Date(currentDate);
+    current.setDate(current.getDate() - 1);
+    prevDate = current.toISOString().split('T')[0];
+  }
+
+  // Get both snapshots
+  const [currentSnapshot, previousSnapshot] = await Promise.all([
+    getSnapshotByDate(currentDate).catch(() => null),
+    getSnapshotByDate(prevDate).catch(() => null)
+  ]);
+
+  if (!currentSnapshot || !previousSnapshot) {
+    return null;
+  }
+
+  // Calculate changes
+  const revenueChange = currentSnapshot.total_revenue - previousSnapshot.total_revenue;
+  const revenueChangePercent = previousSnapshot.total_revenue > 0 
+    ? (revenueChange / previousSnapshot.total_revenue) * 100 
+    : 0;
+
+  const ordersChange = currentSnapshot.total_orders - previousSnapshot.total_orders;
+  const ordersChangePercent = previousSnapshot.total_orders > 0
+    ? (ordersChange / previousSnapshot.total_orders) * 100
+    : 0;
+
+  const itemsSoldChange = currentSnapshot.total_items_sold - previousSnapshot.total_items_sold;
+  const itemsSoldChangePercent = previousSnapshot.total_items_sold > 0
+    ? (itemsSoldChange / previousSnapshot.total_items_sold) * 100
+    : 0;
+
+  return {
+    previous_date: prevDate,
+    current_date: currentDate,
+    revenue_change: revenueChange,
+    revenue_change_percent: revenueChangePercent,
+    orders_change: ordersChange,
+    orders_change_percent: ordersChangePercent,
+    items_sold_change: itemsSoldChange,
+    items_sold_change_percent: itemsSoldChangePercent
+  };
 };

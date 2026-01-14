@@ -99,3 +99,52 @@ export const getRevenueTrends = asyncHandler(async (req: Request, res: Response)
   const trends = await MenuHistoryService.getRevenueTrends(filters);
   res.json(trends);
 });
+
+/**
+ * GET /api/menu-history/category-performance
+ * Obtiene el rendimiento por categorías de menú
+ */
+export const getCategoryPerformance = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { startDate, endDate } = req.query;
+  
+  const filters = {
+    startDate: startDate as string | undefined,
+    endDate: endDate as string | undefined
+  };
+
+  const performance = await MenuHistoryService.getCategoryPerformance(filters);
+  res.json(performance);
+});
+
+/**
+ * GET /api/menu-history/hourly-pattern
+ * Obtiene patrones de ventas por hora
+ */
+export const getHourlySalesPattern = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { startDate, endDate } = req.query;
+  
+  const filters = {
+    startDate: startDate as string | undefined,
+    endDate: endDate as string | undefined
+  };
+
+  const pattern = await MenuHistoryService.getHourlySalesPattern(filters);
+  res.json(pattern);
+});
+
+/**
+ * GET /api/menu-history/compare/:currentDate
+ * Compara snapshots (día actual vs día anterior o fecha específica)
+ */
+export const compareSnapshots = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { currentDate } = req.params;
+  const { previousDate } = req.query;
+  
+  const comparison = await MenuHistoryService.compareSnapshots(
+    currentDate,
+    previousDate as string | undefined
+  );
+  
+  // Return null if no comparison available instead of throwing error
+  res.json(comparison);
+});
