@@ -63,7 +63,15 @@ const CashierPage: React.FC = () => {
           // Si una orden cambió a "Entregado", agregarla a la lista
           if (updatedData.status === 'Entregado' && oldStatus !== 'Entregado') {
             const fullOrder = await orderService.getById(updatedData.id);
-            setOrders(current => [fullOrder, ...current]);
+            setOrders(current => {
+              // ✅ EVITAR DUPLICADOS: Solo agregar si no existe
+              const exists = current.some(o => o.id === fullOrder.id);
+              if (exists) {
+                console.log('⚠️ Orden ya existe en caja, ignorando duplicado:', fullOrder.id);
+                return current;
+              }
+              return [fullOrder, ...current];
+            });
           }
           // Si una orden ya no está en "Entregado" (fue pagada), quitarla
           else if (updatedData.status !== 'Entregado' && oldStatus === 'Entregado') {

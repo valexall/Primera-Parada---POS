@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { ClockIcon, CheckCircleIcon, SoupIcon, BellIcon, EditIcon, UtensilsIcon, PackageIcon, XIcon, AlertTriangleIcon, BarChart3Icon, TrendingUpIcon, Check, ChefHat } from 'lucide-react';
 import { Order, OrderStatus, OrderItem } from '../types';
 import { orderService } from '../services/orderService';
@@ -16,7 +16,8 @@ const KitchenPage: React.FC = () => {
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
   const [dailyStats, setDailyStats] = useState<{ name: string; quantity: number }[]>([]);
   const [showStats, setShowStats] = useState(false);
-  const [lastLocalUpdate, setLastLocalUpdate] = useState<{ orderId: string; timestamp: number } | null>(null);
+  // ✅ Usar useRef en lugar de useState para evitar re-renders innecesarios
+  const lastLocalUpdateRef = useRef<{ orderId: string; timestamp: number } | null>(null);
 
   const loadOrders = useCallback(async (isInitial = false) => {
     if (isInitial) setIsLoading(true);
@@ -58,7 +59,15 @@ const KitchenPage: React.FC = () => {
           const shouldDisplay = filter === 'Todos' || newOrder.status === filter;
           
           if (shouldDisplay) {
-            setOrders(current => [newOrder, ...current]);
+            setOrders(current => {
+              // ✅ EVITAR DUPLICADOS: Solo agregar si no existe
+              const exists = current.some(o => o.id === newOrder.id);
+              if (exists) {
+                console.log('⚠️ Orden ya existe, ignorando duplicado:', newOrder.id);
+                return current;
+              }
+              return [newOrder, ...current];
+            });
           }
           
           // Actualizar stats solo si es relevante (orden entregada)
@@ -139,9 +148,9 @@ const KitchenPage: React.FC = () => {
           if (!orderId) return;
           
           // Evitar actualizar si acabamos de hacer un cambio local (dentro de 1 segundo)
-          if (lastLocalUpdate && 
-              lastLocalUpdate.orderId === orderId && 
-              Date.now() - lastLocalUpdate.timestamp < 1000) {
+          if (lastLocalUpdateRef.current && 
+              lastLocalUpdateRef.current.orderId === orderId && 
+              Date.now() - lastLocalUpdateRef.current.timestamp < 1000) {
             return;
           }
           
@@ -167,8 +176,10 @@ const KitchenPage: React.FC = () => {
       })
       .subscribe();
       
-    return () => { supabaseClient.removeChannel(channel); };
-  }, [filter, lastLocalUpdate]);
+    return () => { 
+      supabaseClient.removeChannel(channel); 
+    };
+  }, [filter]); // ❌ REMOVER lastLocalUpdate de las dependencias para evitar re-suscripciones
 
   const loadDailyStats = async () => {
     try {
@@ -237,7 +248,7 @@ const KitchenPage: React.FC = () => {
 
   const handleUpdateOrder = async (orderId: string, items: OrderItem[]) => {
     // Marcar actualización local para evitar conflictos con realtime
-    setLastLocalUpdate({ orderId, timestamp: Date.now() });
+    lastLocalUpdateRef.current = { orderId, timestamp: Date.now() };
     
     // Optimistic Update: Actualizar UI inmediatamente
     setOrders(current => current.map(order => {
@@ -261,11 +272,11 @@ const KitchenPage: React.FC = () => {
       ));
       
       // Limpiar el marcador después de 1 segundo
-      setTimeout(() => setLastLocalUpdate(null), 1000);
+      setTimeout(() => lastLocalUpdateRef.current = null, 1000);
     } catch (error) {
       console.error('Error updating order items:', error);
       toast.error('Error al actualizar el pedido');
-      setLastLocalUpdate(null);
+      lastLocalUpdateRef.current = null;
       // Revertir en caso de error
       await loadOrders(false);
     }
