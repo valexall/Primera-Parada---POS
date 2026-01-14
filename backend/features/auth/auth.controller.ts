@@ -28,3 +28,71 @@ export const register = asyncHandler(async (req: Request, res: Response): Promis
   res.status(201).json(result);
 });
 
+/**
+ * GET /api/auth/users
+ * Obtiene todos los usuarios
+ * SOLO ADMIN
+ */
+export const getAllUsers = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const users = await AuthService.getAllUsers();
+  res.json(users);
+});
+
+/**
+ * GET /api/auth/users/:id
+ * Obtiene un usuario por ID
+ * SOLO ADMIN
+ */
+export const getUserById = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const user = await AuthService.getUserById(id);
+  res.json(user);
+});
+
+/**
+ * PUT /api/auth/users/:id
+ * Actualiza un usuario
+ * SOLO ADMIN
+ */
+export const updateUser = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const updates = req.body;
+  const result = await AuthService.updateUser(id, updates);
+  res.json(result);
+});
+
+/**
+ * PUT /api/auth/users/:id/password
+ * Actualiza la contraseña de un usuario
+ * SOLO ADMIN
+ */
+export const updateUserPassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const { password } = req.body;
+  const result = await AuthService.updateUserPassword(id, password);
+  res.json(result);
+});
+
+/**
+ * PATCH /api/auth/users/:id/status
+ * Activa o desactiva un usuario
+ * SOLO ADMIN
+ */
+export const toggleUserStatus = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const { is_active } = req.body;
+  const result = await AuthService.toggleUserStatus(id, is_active);
+  res.json(result);
+});
+
+/**
+ * DELETE /api/auth/users/:id
+ * Elimina un usuario
+ * SOLO ADMIN
+ */
+export const deleteUser = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const result = await AuthService.deleteUser(id);
+  res.json(result);
+});
+

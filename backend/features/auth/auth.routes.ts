@@ -1,6 +1,16 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
-import { login, register } from './auth.controller';
+import { 
+  login, 
+  register, 
+  getAllUsers, 
+  getUserById, 
+  updateUser, 
+  updateUserPassword, 
+  toggleUserStatus, 
+  deleteUser 
+} from './auth.controller';
+import { verifyToken, verifyAdmin } from '../../middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -48,5 +58,28 @@ router.post('/login', loginLimiter, login);
  * ✅ Protegido con rate limiting (10 intentos/hora)
  */
 router.post('/register', registerLimiter, register);
+
+/**
+ * RUTAS DE ADMINISTRACIÓN DE USUARIOS
+ * ✅ Protegidas con autenticación + rol admin
+ */
+
+// GET /api/auth/users - Listar todos los usuarios
+router.get('/users', verifyToken, verifyAdmin, getAllUsers);
+
+// GET /api/auth/users/:id - Obtener un usuario específico
+router.get('/users/:id', verifyToken, verifyAdmin, getUserById);
+
+// PUT /api/auth/users/:id - Actualizar usuario
+router.put('/users/:id', verifyToken, verifyAdmin, updateUser);
+
+// PUT /api/auth/users/:id/password - Actualizar contraseña
+router.put('/users/:id/password', verifyToken, verifyAdmin, updateUserPassword);
+
+// PATCH /api/auth/users/:id/status - Activar/desactivar usuario
+router.patch('/users/:id/status', verifyToken, verifyAdmin, toggleUserStatus);
+
+// DELETE /api/auth/users/:id - Eliminar usuario
+router.delete('/users/:id', verifyToken, verifyAdmin, deleteUser);
 
 export default router;

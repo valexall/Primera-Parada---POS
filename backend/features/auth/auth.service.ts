@@ -124,3 +124,152 @@ export const verifyToken = (token: string): JWTPayload => {
     throw error;
   }
 };
+
+/**
+ * Obtiene la lista de todos los usuarios
+ * NOTA: Solo para admin
+ */
+export const getAllUsers = async () => {
+  const { data: users, error } = await supabase
+    .from('users')
+    .select('id, email, name, role, is_active, created_at')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(`Error obteniendo usuarios: ${error.message}`);
+  }
+
+  return users;
+};
+
+/**
+ * Obtiene un usuario por ID
+ * NOTA: Solo para admin
+ */
+export const getUserById = async (userId: string) => {
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('id, email, name, role, is_active, created_at')
+    .eq('id', userId)
+    .single();
+
+  if (error) {
+    throw new Error(`Error obteniendo usuario: ${error.message}`);
+  }
+
+  if (!user) {
+    throw new Error('Usuario no encontrado');
+  }
+
+  return user;
+};
+
+/**
+ * Actualiza un usuario existente
+ * NOTA: Solo para admin
+ */
+export const updateUser = async (userId: string, updates: Partial<RegisterRequest>) => {
+  const { email, name, role } = updates;
+
+  // Validar rol si se está actualizando
+  if (role) {
+    const validRoles = ['admin', 'moza'];
+    if (!validRoles.includes(role)) {
+      throw new ValidationError('Rol inválido. Roles permitidos: admin, moza');
+    }
+  }
+
+  const updateData: any = {};
+  if (email) updateData.email = email;
+  if (name) updateData.name = name;
+  if (role) updateData.role = role;
+
+  const { data, error } = await supabase
+    .from('users')
+    .update(updateData)
+    .eq('id', userId)
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === '23505') {
+      throw new ConflictError('El email ya está registrado');
+    }
+    throw new Error(`Error actualizando usuario: ${error.message}`);
+  }
+
+  return {
+    message: 'Usuario actualizado exitosamente',
+    user: {
+      id: data.id,
+      email: data.email,
+      name: data.name,
+      role: data.role
+    }
+  };
+};
+
+/**
+ * Actualiza la contraseña de un usuario
+ * NOTA: Solo para admin
+ */
+export const updateUserPassword = async (userId: string, newPassword: string) => {
+  if (!newPassword || newPassword.length < 6) {
+    throw new ValidationError('La contraseña debe tener al menos 6 caracteres');
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  const { error } = await supabase
+    .from('users')
+    .update({ password: hashedPassword })
+    .eq('id', userId);
+
+  if (error) {
+    throw new Error(`Error actualizando contraseña: ${error.message}`);
+  }
+
+  return { message: 'Contraseña actualizada exitosamente' };
+};
+
+/**
+ * Activa o desactiva un usuario
+ * NOTA: Solo para admin
+ */
+export const toggleUserStatus = async (userId: string, isActive: boolean) => {
+  const { data, error } = await supabase
+    .from('users')
+    .update({ is_active: isActive })
+    .eq('id', userId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Error cambiando estado del usuario: ${error.message}`);
+  }
+
+  return {
+    message: `Usuario ${isActive ? 'activado' : 'desactivado'} exitosamente`,
+    user: {
+      id: data.id,
+      is_active: data.is_active
+    }
+  };
+};
+
+/**
+ * Elimina un usuario
+ * NOTA: Solo para admin
+ */
+export const deleteUser = async (userId: string) => {
+  const { error } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', userId);
+
+  if (error) {
+    throw new Error(`Error eliminando usuario: ${error.message}`);
+  }
+
+  return { message: 'Usuario eliminado exitosamente' };
+};

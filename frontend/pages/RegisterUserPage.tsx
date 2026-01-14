@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { UserPlusIcon, SaveIcon, UserIcon, MailIcon, LockIcon } from 'lucide-react';
+import { UserPlusIcon, SaveIcon, UserIcon, MailIcon, LockIcon, Eye, EyeOff } from 'lucide-react';
 import api from '../services/api';
 
 const RegisterUserPage: React.FC = () => {
   const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'moza' });
   const [status, setStatus] = useState<{ type: 'success' | 'error' | ''; msg: string }>({ type: '', msg: '' });
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +59,14 @@ const RegisterUserPage: React.FC = () => {
             <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase ml-1 block mb-1">Contraseña</label>
             <div className="relative">
               <LockIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
-              <input type="password" required className="w-full pl-11 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-medium text-slate-800 dark:text-slate-200" placeholder="••••••" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+              <input type={showPassword ? "text" : "password"} required className="w-full pl-11 pr-12 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-medium text-slate-800 dark:text-slate-200" placeholder="••••••" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-amber-500 transition-colors"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 

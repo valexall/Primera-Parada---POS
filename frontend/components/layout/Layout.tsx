@@ -67,7 +67,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <PackageIcon size={20} /> Inventario
           </Link>
           <Link to={ROUTES.USERS} className={getLinkClass(ROUTES.USERS)} onClick={() => setIsMobileMenuOpen(false)}>
-            <UsersIcon size={20} /> Usuarios
+            <UsersIcon size={20} /> Agregar Usuario
+          </Link>
+          <Link to={ROUTES.USER_MANAGEMENT} className={getLinkClass(ROUTES.USER_MANAGEMENT)} onClick={() => setIsMobileMenuOpen(false)}>
+            <UsersIcon size={20} /> Gestión Usuarios
           </Link>
           <Link to={ROUTES.MENU_HISTORY} className={getLinkClass(ROUTES.MENU_HISTORY)} onClick={() => setIsMobileMenuOpen(false)}>
             <BarChart3Icon size={20} /> Historial Menús
