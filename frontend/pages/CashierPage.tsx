@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Order, Receipt as ReceiptType, SelectedItem } from '../types';
 import { orderService } from '../services/orderService';
 import { financeService } from '../services/financeService';
 import { receiptService } from '../services/receiptService';
+import { supabaseClient } from '../services/supabaseClient';
 import { DollarSignIcon, CreditCardIcon, ReceiptIcon, ArrowLeftIcon, CheckCircle2Icon, CircleIcon, UtensilsIcon, PackageIcon, AlertCircleIcon, XIcon, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SkeletonCard } from '../components/ui/Loader';
@@ -26,24 +27,64 @@ const CashierPage: React.FC = () => {
   // Estado para el modal de confirmación de pago
   const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
 
+  const loadOrdersToPay = useCallback(async (isInitial = false) => {
+    if (isInitial) setLoading(true);
+    try {
+      const allOrders = await orderService.getByStatus('Entregado');
+      setOrders(allOrders);
+    } finally {
+      if (isInitial) setLoading(false);
+    }
+  }, []);
+
+  // Carga inicial
   useEffect(() => {
-    loadOrdersToPay();
+    loadOrdersToPay(true);
     
     // Limpiar todos los toasts cuando el componente se desmonte
     return () => {
       toast.dismiss();
     };
-  }, []);
+  }, [loadOrdersToPay]);
 
-  const loadOrdersToPay = async () => {
-    setLoading(true);
-    try {
-      const allOrders = await orderService.getByStatus('Entregado');
-      setOrders(allOrders);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Sincronización en tiempo real
+  useEffect(() => {
+    const channel = supabaseClient
+      .channel('cashier-orders')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders'
+      }, async (payload) => {
+        try {
+          const updatedData = payload.new;
+          const oldStatus = payload.old.status;
+          
+          // Si una orden cambió a "Entregado", agregarla a la lista
+          if (updatedData.status === 'Entregado' && oldStatus !== 'Entregado') {
+            const fullOrder = await orderService.getById(updatedData.id);
+            setOrders(current => [fullOrder, ...current]);
+          }
+          // Si una orden ya no está en "Entregado" (fue pagada), quitarla
+          else if (updatedData.status !== 'Entregado' && oldStatus === 'Entregado') {
+            setOrders(current => current.filter(o => o.id !== updatedData.id));
+            
+            // Si la orden que estamos viendo fue pagada, limpiar selección
+            if (selectedOrder?.id === updatedData.id) {
+              setSelectedOrder(null);
+              setShowMobilePayment(false);
+            }
+          }
+        } catch (error) {
+          console.error('Error handling realtime update in cashier:', error);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabaseClient.removeChannel(channel);
+    };
+  }, [selectedOrder]);
 
   const handleSelectOrder = (order: Order) => {
     setSelectedOrder(order);
