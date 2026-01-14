@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { PlusIcon, MinusIcon, Trash2Icon, ShoppingBagIcon, ChevronRightIcon, XIcon, ChevronDownIcon, UtensilsIcon, PackageIcon, ZapIcon } from 'lucide-react';
+import { PlusIcon, MinusIcon, Trash2Icon, ShoppingBagIcon, ChevronRightIcon, XIcon, ChevronDownIcon, UtensilsIcon, PackageIcon, ZapIcon, ClipboardList } from 'lucide-react';
 import { MenuItem, OrderItem } from '../types';
 import { menuService } from '../services/menuService';
 import { orderService } from '../services/orderService';
@@ -299,8 +299,15 @@ const OrderPage: React.FC = () => {
       {/* --- IZQUIERDA: CATÁLOGO (Scrollable) --- */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <header className="mb-4 shrink-0">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">Nuevo Pedido</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Selecciona los platos para la orden</p>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center">
+              <ClipboardList size={24} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">Nuevo Pedido</h1>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">Selecciona los platos para la orden</p>
+            </div>
+          </div>
         </header>
 
         {/* Categorías (Sticky) */}

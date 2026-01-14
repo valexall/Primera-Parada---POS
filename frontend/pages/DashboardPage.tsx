@@ -3,7 +3,7 @@ import { financeService } from '../services/financeService';
 import { receiptService } from '../services/receiptService';
 import { DailySummary, Expense, Sale, Receipt as ReceiptType } from '../types';
 import { useCachedData } from '../hooks/useCachedData';
-import { TrendingUpIcon, TrendingDownIcon, WalletIcon, CalendarIcon, SearchIcon, ArrowDownCircleIcon, EyeIcon, ReceiptIcon, UtensilsIcon, PackageIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { TrendingUpIcon, TrendingDownIcon, WalletIcon, CalendarIcon, SearchIcon, ArrowDownCircleIcon, EyeIcon, ReceiptIcon, UtensilsIcon, PackageIcon, ChevronLeftIcon, ChevronRightIcon, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SkeletonCard } from '../components/ui/Loader';
 import Receipt from '../components/ui/Receipt';
@@ -122,9 +122,14 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-12">
-      <header>
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Panel Financiero</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm">Resumen de movimientos y métricas</p>
+      <header className="flex items-center gap-3">
+        <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-xl flex items-center justify-center">
+          <TrendingUp size={24} />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Panel Financiero</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Resumen de movimientos y métricas</p>
+        </div>
       </header>
 
       {/* 1. TARJETAS DE RESUMEN */}

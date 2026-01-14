@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { HistoryIcon, CalendarIcon, FilterIcon, PackageIcon, UtensilsIcon, SearchIcon, XIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { HistoryIcon, CalendarIcon, FilterIcon, PackageIcon, UtensilsIcon, SearchIcon, XIcon, ChevronLeft, ChevronRight, History } from 'lucide-react';
 import { Order, OrderStatus } from '../types';
 import { orderService } from '../services/orderService';
 import { SkeletonCard } from '../components/ui/Loader';
@@ -74,10 +74,15 @@ const HistoryPage: React.FC = () => {
     <div className="pb-10">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <HistoryIcon className="text-blue-500" /> Historial de Órdenes
-        </h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm">Consulta órdenes de días anteriores</p>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 rounded-xl flex items-center justify-center">
+            <History size={24} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Órdenes</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Consulta órdenes de días anteriores</p>
+          </div>
+        </div>
       </div>
 
       {/* Filtros */}

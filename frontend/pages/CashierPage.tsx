@@ -3,7 +3,7 @@ import { Order, Receipt as ReceiptType, SelectedItem } from '../types';
 import { orderService } from '../services/orderService';
 import { financeService } from '../services/financeService';
 import { receiptService } from '../services/receiptService';
-import { DollarSignIcon, CreditCardIcon, ReceiptIcon, ArrowLeftIcon, CheckCircle2Icon, CircleIcon, UtensilsIcon, PackageIcon, AlertCircleIcon, XIcon } from 'lucide-react';
+import { DollarSignIcon, CreditCardIcon, ReceiptIcon, ArrowLeftIcon, CheckCircle2Icon, CircleIcon, UtensilsIcon, PackageIcon, AlertCircleIcon, XIcon, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SkeletonCard } from '../components/ui/Loader';
 import Receipt from '../components/ui/Receipt';
@@ -233,8 +233,15 @@ const CashierPage: React.FC = () => {
       */}
       <div className={`flex-1 overflow-hidden flex-col ${showMobilePayment ? 'hidden md:flex' : 'flex'}`}>
         <header className="mb-4">
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Caja / Cobros</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Mesas con pedidos entregados pendientes de pago</p>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-xl flex items-center justify-center">
+              <Wallet size={24} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Caja / Cobros</h1>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">Mesas con pedidos entregados pendientes de pago</p>
+            </div>
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3 pb-20 md:pb-0">

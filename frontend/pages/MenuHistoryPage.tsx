@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   CalendarIcon, 
   TrendingUpIcon, 
-  DollarSignIcon, 
+  DollarSignIcon,
+  BarChart3, 
   ShoppingBagIcon,
   BarChart3Icon,
   FileTextIcon,
@@ -112,86 +113,90 @@ const MenuHistoryPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+    <div className="pb-10">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center">
+            <BarChart3 size={24} />
+          </div>
           <div>
-            <h1 className="text-4xl font-black text-slate-800 dark:text-slate-100 mb-2">
-              📊 Historial de Menús
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+              Historial de Menús
             </h1>
-            <p className="text-slate-600 dark:text-slate-400">
+            <p className="text-slate-500 dark:text-slate-400 text-sm">
               Análisis y estadísticas para Business Intelligence
             </p>
           </div>
-          
-          <div className="flex gap-3">
-            <button
-              onClick={() => setView('list')}
-              className={`px-4 py-2 rounded-xl font-bold transition-all ${
-                view === 'list'
-                  ? 'bg-blue-500 text-white shadow-lg shadow-blue-200 dark:shadow-blue-900'
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-              }`}
-            >
-              <FileTextIcon size={18} className="inline mr-2" />
-              Historial
-            </button>
-            <button
-              onClick={() => setView('analytics')}
-              className={`px-4 py-2 rounded-xl font-bold transition-all ${
-                view === 'analytics'
-                  ? 'bg-blue-500 text-white shadow-lg shadow-blue-200 dark:shadow-blue-900'
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-              }`}
-            >
-              <BarChart3Icon size={18} className="inline mr-2" />
-              Analytics
-            </button>
-            <button
-              onClick={handleGenerateSnapshot}
-              className="px-4 py-2 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 shadow-lg shadow-green-200 dark:shadow-green-900 transition-all"
-            >
-              <PlusIcon size={18} className="inline mr-2" />
-              Generar Snapshot Hoy
-            </button>
-          </div>
         </div>
+        
+        <div className="flex gap-3 flex-wrap">
+          <button
+            onClick={() => setView('list')}
+            className={`px-4 py-2 rounded-xl font-bold transition-all text-sm ${
+              view === 'list'
+                ? 'bg-blue-500 text-white shadow-md'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+          >
+            <FileTextIcon size={16} className="inline mr-2" />
+            Historial
+          </button>
+          <button
+            onClick={() => setView('analytics')}
+            className={`px-4 py-2 rounded-xl font-bold transition-all text-sm ${
+              view === 'analytics'
+                ? 'bg-blue-500 text-white shadow-md'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+          >
+            <BarChart3Icon size={16} className="inline mr-2" />
+            Analytics
+          </button>
+          <button
+            onClick={handleGenerateSnapshot}
+            className="px-4 py-2 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 shadow-md transition-all text-sm flex items-center gap-2"
+          >
+            <PlusIcon size={16} />
+            Generar Snapshot
+          </button>
+        </div>
+      </div>
 
-        {/* Filters */}
-        {view !== 'detail' && (
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-6 mb-6">
-            <div className="flex gap-4 items-end">
-              <div className="flex-1">
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                  Fecha Inicio
-                </label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                  Fecha Fin
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200"
-                />
-              </div>
-              <button
-                onClick={() => {
-                  setStartDate('');
-                  setEndDate('');
-                }}
-                className="px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-              >
-                Limpiar
+      {/* Filters */}
+      {view !== 'detail' && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
+          <div className="flex gap-4 items-end flex-wrap">
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">
+                Fecha Inicio
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200"
+              />
+            </div>
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">
+                Fecha Fin
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200"
+              />
+            </div>
+            <button
+              onClick={() => {
+                setStartDate('');
+                setEndDate('');
+              }}
+              className="px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+            >
+              Limpiar
               </button>
               <button
                 onClick={view === 'analytics' ? loadAnalytics : loadSnapshots}
@@ -205,14 +210,15 @@ const MenuHistoryPage: React.FC = () => {
         )}
 
         {/* Content */}
-        {view === 'list' && (
+        <div>
+          {view === 'list' && (
           <>
             {/* Snapshots List */}
-            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
               {loading ? (
                 <div className="p-12 text-center">
-                  <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p className="text-slate-600 dark:text-slate-400">Cargando...</p>
+                  <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">Cargando...</p>
                 </div>
               ) : snapshots.length === 0 ? (
                 <div className="p-12 text-center">
@@ -222,27 +228,27 @@ const MenuHistoryPage: React.FC = () => {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-slate-50 dark:bg-slate-700/50">
+                    <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
                       <tr>
-                        <th className="px-6 py-4 text-left">Fecha</th>
-                        <th className="px-6 py-4 text-left">Ingresos</th>
-                        <th className="px-6 py-4 text-left">Pedidos</th>
-                        <th className="px-6 py-4 text-left">Items Vendidos</th>
-                        <th className="px-6 py-4 text-left">Hora Pico</th>
-                        <th className="px-6 py-4 text-right">Acciones</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Fecha</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Ingresos</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Pedidos</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Items Vendidos</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Hora Pico</th>
+                        <th className="px-6 py-4 text-right text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                       {snapshots.map(snapshot => (
                         <tr 
                           key={snapshot.id}
-                          className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                          className="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors cursor-pointer"
                           onClick={() => handleViewSnapshot(snapshot)}
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
-                              <CalendarIcon size={18} className="text-blue-500" />
-                              <span className="font-bold text-slate-700 dark:text-slate-200">
+                              <CalendarIcon size={16} className="text-blue-500" />
+                              <span className="font-semibold text-slate-700 dark:text-slate-200">
                                 {formatDate(snapshot.snapshot_date)}
                               </span>
                             </div>
@@ -253,14 +259,14 @@ const MenuHistoryPage: React.FC = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-bold">
+                            <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-bold">
                               {snapshot.total_orders}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                          <td className="px-6 py-4 text-slate-600 dark:text-slate-300 font-medium">
                             {snapshot.total_items_sold}
                           </td>
-                          <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                          <td className="px-6 py-4 text-slate-600 dark:text-slate-300 font-medium">
                             {formatHour(snapshot.peak_hour)}
                           </td>
                           <td className="px-6 py-4 text-right">
@@ -269,7 +275,7 @@ const MenuHistoryPage: React.FC = () => {
                                 e.stopPropagation();
                                 handleViewSnapshot(snapshot);
                               }}
-                              className="text-blue-500 hover:text-blue-600 font-bold"
+                              className="text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 font-semibold text-sm transition-colors"
                             >
                               Ver Detalles →
                             </button>
@@ -288,17 +294,17 @@ const MenuHistoryPage: React.FC = () => {
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="p-2 bg-white dark:bg-slate-800 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                 >
                   <ChevronLeftIcon size={20} />
                 </button>
-                <span className="text-slate-700 dark:text-slate-300 font-bold">
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
                   Página {currentPage} de {totalPages}
                 </span>
                 <button
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="p-2 bg-white dark:bg-slate-800 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                 >
                   <ChevronRightIcon size={20} />
                 </button>
@@ -312,85 +318,85 @@ const MenuHistoryPage: React.FC = () => {
           <div className="space-y-6">
             <button
               onClick={() => setView('list')}
-              className="flex items-center gap-2 text-blue-500 hover:text-blue-600 font-bold"
+              className="flex items-center gap-2 text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 font-semibold text-sm transition-colors"
             >
-              <ChevronLeftIcon size={20} />
+              <ChevronLeftIcon size={18} />
               Volver al historial
             </button>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <DollarSignIcon size={24} className="text-green-500" />
-                  <span className="text-slate-600 dark:text-slate-400 text-sm">Ingresos Totales</span>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSignIcon size={20} className="text-green-500" />
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase">Ingresos Totales</span>
                 </div>
-                <p className="text-3xl font-black text-slate-800 dark:text-slate-100">
+                <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
                   {formatCurrency(selectedSnapshot.total_revenue)}
                 </p>
               </div>
 
-              <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <ShoppingBagIcon size={24} className="text-blue-500" />
-                  <span className="text-slate-600 dark:text-slate-400 text-sm">Pedidos</span>
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShoppingBagIcon size={20} className="text-blue-500" />
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase">Pedidos</span>
                 </div>
-                <p className="text-3xl font-black text-slate-800 dark:text-slate-100">
+                <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
                   {selectedSnapshot.total_orders}
                 </p>
-                <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
                   🍽️ {selectedSnapshot.dine_in_orders} • 📦 {selectedSnapshot.takeaway_orders}
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <TrendingUpIcon size={24} className="text-purple-500" />
-                  <span className="text-slate-600 dark:text-slate-400 text-sm">Ticket Promedio</span>
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUpIcon size={20} className="text-purple-500" />
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase">Ticket Promedio</span>
                 </div>
-                <p className="text-3xl font-black text-slate-800 dark:text-slate-100">
+                <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
                   {formatCurrency(selectedSnapshot.avg_order_value || 0)}
                 </p>
               </div>
 
-              <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <CalendarIcon size={24} className="text-orange-500" />
-                  <span className="text-slate-600 dark:text-slate-400 text-sm">Hora Pico</span>
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <CalendarIcon size={20} className="text-orange-500" />
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase">Hora Pico</span>
                 </div>
-                <p className="text-3xl font-black text-slate-800 dark:text-slate-100">
+                <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
                   {formatHour(selectedSnapshot.peak_hour)}
                 </p>
               </div>
             </div>
 
             {/* Sales Stats Table */}
-            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden">
-              <div className="p-6 border-b border-slate-100 dark:border-slate-700">
-                <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
                   Estadísticas de Ventas por Plato
                 </h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-slate-50 dark:bg-slate-700/50">
+                  <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
                     <tr>
-                      <th className="px-6 py-4 text-left">Plato</th>
-                      <th className="px-6 py-4 text-left">Precio</th>
-                      <th className="px-6 py-4 text-left">Cantidad Vendida</th>
-                      <th className="px-6 py-4 text-left">Ingresos</th>
-                      <th className="px-6 py-4 text-left">Veces Ordenado</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Plato</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Precio</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Cantidad Vendida</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Ingresos</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Veces Ordenado</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                     {selectedSnapshot.sales_stats
                       .sort((a, b) => b.quantity_sold - a.quantity_sold)
                       .map((stat, index) => (
-                        <tr key={stat.menu_item_id} className="hover:bg-slate-50 dark:hover:bg-slate-700">
+                        <tr key={stat.menu_item_id} className="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
                               {index < 3 && (
-                                <span className="text-xl">
+                                <span className="text-lg">
                                   {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                                 </span>
                               )}
@@ -426,46 +432,46 @@ const MenuHistoryPage: React.FC = () => {
         {view === 'analytics' && (
           <div className="space-y-6">
             {/* Top Selling Items */}
-            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden">
-              <div className="p-6 border-b border-slate-100 dark:border-slate-700">
-                <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
                   🏆 Top 10 Platos Más Vendidos
                 </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                   Análisis agregado del período seleccionado
                 </p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-slate-50 dark:bg-slate-700/50">
+                  <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
                     <tr>
-                      <th className="px-6 py-4 text-left">Ranking</th>
-                      <th className="px-6 py-4 text-left">Plato</th>
-                      <th className="px-6 py-4 text-left">Cantidad Total</th>
-                      <th className="px-6 py-4 text-left">Ingresos Totales</th>
-                      <th className="px-6 py-4 text-left">Veces Ordenado</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Ranking</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Plato</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Cantidad Total</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Ingresos Totales</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">Veces Ordenado</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                     {topSellingItems.map((item, index) => (
-                      <tr key={item.menu_item_id} className="hover:bg-slate-50 dark:hover:bg-slate-700">
+                      <tr key={item.menu_item_id} className="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
                         <td className="px-6 py-4">
-                          <span className="text-2xl">
+                          <span className="text-lg">
                             {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
                           </span>
                         </td>
-                        <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-200">
+                        <td className="px-6 py-4 font-semibold text-slate-700 dark:text-slate-200">
                           {item.name}
                         </td>
                         <td className="px-6 py-4">
-                          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-bold">
+                          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-bold">
                             {item.total_quantity}
                           </span>
                         </td>
                         <td className="px-6 py-4 font-mono font-bold text-green-600 dark:text-green-400">
                           {formatCurrency(item.total_revenue)}
                         </td>
-                        <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                        <td className="px-6 py-4 text-slate-600 dark:text-slate-300 font-medium">
                           {item.times_ordered}
                         </td>
                       </tr>
@@ -518,9 +524,9 @@ const MenuHistoryPage: React.FC = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
-export default MenuHistoryPage;
+  export default MenuHistoryPage;

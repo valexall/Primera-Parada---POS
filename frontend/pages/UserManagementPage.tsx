@@ -7,8 +7,7 @@ import {
   XCircleIcon, 
   KeyIcon,
   SaveIcon,
-  XIcon,
-  UserPlusIcon 
+  XIcon
 } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { Supply } from '../types';
-import { PackageIcon, AlertTriangleIcon, PlusIcon, ShoppingCartIcon, CheckCircle2Icon } from 'lucide-react';
+import { PackageIcon, AlertTriangleIcon, PlusIcon, ShoppingCartIcon, CheckCircle2Icon, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const InventoryPage: React.FC = () => {
@@ -41,9 +41,14 @@ const InventoryPage: React.FC = () => {
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Inventario</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Control de insumos y stock</p>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center">
+            <Package size={24} />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Inventario</h2>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Control de insumos y stock</p>
+          </div>
         </div>
         <div className="flex gap-3">
           <button onClick={() => setShowAddModal(true)} className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 font-bold flex items-center gap-2 shadow-sm">
