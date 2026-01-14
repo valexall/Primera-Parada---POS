@@ -12,6 +12,7 @@ import dashboardRoutes from './features/dashboard/dashboard.routes';
 import inventoryRoutes from './features/inventory/inventory.routes';
 import receiptRoutes from './features/receipts/receipts.routes';
 import menuHistoryRoutes from './features/menu-history/menu-history.routes';
+import chatbotRoutes from './features/chatbot/chatbot.routes';
 
 // Middleware centralizado de manejo de errores
 import { errorHandler, notFoundHandler, errorMetrics } from './middleware/errorHandler';
@@ -33,6 +34,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/receipts', receiptRoutes);
 app.use('/api/menu-history', menuHistoryRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({

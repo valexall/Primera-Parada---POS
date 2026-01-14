@@ -6,6 +6,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { MenuProvider } from './context/MenuContext';
 import { ROUTES } from './constants/routes';
 import { Toaster } from 'react-hot-toast'; // <--- IMPORTANTE
+import { ChatbotWidget } from './components/common/ChatbotWidget';
 
 // Importación de Páginas
 import MenuPage from './pages/MenuPage';
@@ -93,6 +94,8 @@ export function App() {
                     </ProtectedRoute>
                   } />
                 </Routes>
+                {/* Chatbot Widget - Visible en todas las páginas autenticadas */}
+                <ChatbotWidget context="help" />
               </Layout>
             </ProtectedRoute>
           } />
