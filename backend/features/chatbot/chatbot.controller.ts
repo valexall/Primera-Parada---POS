@@ -57,13 +57,13 @@ export class ChatbotController {
    */
   async health(req: Request, res: Response) {
     try {
-      const isConfigured = !!process.env.OPENAI_API_KEY;
+      const isConfigured = !!process.env.GROQ_API_KEY;
 
       res.json({
         status: isConfigured ? 'ok' : 'warning',
         message: isConfigured
-          ? 'Chatbot configurado correctamente'
-          : 'API Key de OpenAI no configurada',
+          ? 'Chatbot configurado correctamente con Groq'
+          : 'API Key de Groq no configurada',
         timestamp: new Date(),
       });
     } catch (error: any) {
