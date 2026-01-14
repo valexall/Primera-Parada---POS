@@ -66,10 +66,7 @@ const CashierPage: React.FC = () => {
             setOrders(current => {
               // ✅ EVITAR DUPLICADOS: Solo agregar si no existe
               const exists = current.some(o => o.id === fullOrder.id);
-              if (exists) {
-                console.log('⚠️ Orden ya existe en caja, ignorando duplicado:', fullOrder.id);
-                return current;
-              }
+              if (exists) return current;
               return [fullOrder, ...current];
             });
           }
