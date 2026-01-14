@@ -55,7 +55,7 @@ export const loginUser = async (credentials: LoginRequest): Promise<LoginRespons
     token,
     user: {
       name: user.name,
-      role: user.role as 'admin' | 'cajero' | 'cocina',
+      role: user.role as 'admin' | 'moza',
       email: user.email
     }
   };
@@ -77,9 +77,9 @@ export const registerUser = async (userData: RegisterRequest): Promise<RegisterR
     throw new ValidationError('La contraseña debe tener al menos 6 caracteres');
   }
 
-  const validRoles = ['admin', 'cajero', 'cocina'];
+  const validRoles = ['admin', 'moza'];
   if (!validRoles.includes(role)) {
-    throw new ValidationError('Rol inválido. Roles permitidos: admin, cajero, cocina');
+    throw new ValidationError('Rol inválido. Roles permitidos: admin, moza');
   }
 
   // ✅ OPTIMIZADO: Hash con 10 rounds (balance seguridad/performance)

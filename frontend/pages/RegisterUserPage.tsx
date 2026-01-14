@@ -3,7 +3,7 @@ import { UserPlusIcon, SaveIcon, UserIcon, MailIcon, LockIcon } from 'lucide-rea
 import api from '../services/api';
 
 const RegisterUserPage: React.FC = () => {
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'waiter' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'moza' });
   const [status, setStatus] = useState<{ type: 'success' | 'error' | ''; msg: string }>({ type: '', msg: '' });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -12,7 +12,7 @@ const RegisterUserPage: React.FC = () => {
     try {
       await api.post('/auth/register', formData);
       setStatus({ type: 'success', msg: `Usuario ${formData.name} creado correctamente.` });
-      setFormData({ name: '', email: '', password: '', role: 'waiter' });
+      setFormData({ name: '', email: '', password: '', role: 'moza' });
     } catch (error: any) {
       setStatus({ type: 'error', msg: error.response?.data?.error || 'Error al registrar.' });
     }
@@ -65,8 +65,8 @@ const RegisterUserPage: React.FC = () => {
           <div>
             <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase ml-1 block mb-1">Rol</label>
             <select className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-medium text-slate-800 dark:text-slate-200" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
-              <option value="waiter">Moza / Personal</option>
-              <option value="admin">Administrador / Dueña</option>
+              <option value="moza">Mozo(a)</option>
+              <option value="admin">Administrador(a)</option>
             </select>
           </div>
 

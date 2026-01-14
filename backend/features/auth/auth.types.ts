@@ -6,7 +6,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'cajero' | 'cocina';
+  role: 'admin' | 'moza';
 }
 
 export interface LoginRequest {
@@ -18,7 +18,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   name: string;
-  role: 'admin' | 'cajero' | 'cocina';
+  role: 'admin' | 'moza';
 }
 
 export interface LoginResponse {

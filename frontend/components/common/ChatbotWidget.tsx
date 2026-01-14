@@ -10,12 +10,14 @@ import {
   Loader2
 } from 'lucide-react';
 import { chatbotService, ChatMessage, ChatResponse } from '../../services/chatbotService';
+import { useAuth } from '../../context/AuthContext';
 
 interface ChatbotWidgetProps {
   context?: 'help' | 'menu-analysis';
 }
 
 export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ context = 'help' }) => {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -48,6 +50,11 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ context = 'help' }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, context]);
+
+  // Solo mostrar el chatbot para administradores
+  if (user?.role !== 'admin') {
+    return null;
+  }
 
   const loadSuggestions = async () => {
     try {
@@ -127,7 +134,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ context = 'help' }
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl p-4 shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-105 transition-all duration-300 z-50 group"
+          className="fixed bottom-20 right-6 md:bottom-6 md:right-6 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl p-4 shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-105 transition-all duration-300 z-50 group"
           aria-label="Hablar con Iris"
         >
           <MessageCircle size={24} className="group-hover:animate-pulse" />
@@ -144,7 +151,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ context = 'help' }
             ? 'opacity-100 translate-y-0 pointer-events-auto' 
             : 'opacity-0 translate-y-10 pointer-events-none'
         } ${
-          isExpanded ? 'inset-4 md:inset-10 w-auto h-auto' : 'bottom-6 right-6 w-[380px] h-[600px] max-w-[calc(100vw-3rem)] max-h-[calc(100vh-6rem)]'
+          isExpanded ? 'inset-4 md:inset-10 w-auto h-auto' : 'bottom-20 right-6 md:bottom-6 md:right-6 w-[380px] h-[550px] max-w-[calc(100vw-3rem)] max-h-[calc(100vh-10rem)]'
         }`}
       >
         {/* Header - Identidad Iris */}
