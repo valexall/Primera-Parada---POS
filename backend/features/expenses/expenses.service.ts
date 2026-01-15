@@ -1,21 +1,14 @@
 import { supabase } from '../../config/supabase';
 import type { Expense, CreateExpenseRequest, ExpenseFilters } from './expenses.types';
-import { 
-  ValidationError 
+import {
+  ValidationError
 } from '../../middleware/errorHandler';
 
-/**
- * ExpensesService - Lógica de negocio para Gastos
- * Todas las funciones retornan datos puros (sin objetos Response de Express)
- */
 
-/**
- * Obtiene los gastos del día actual
- */
 export const getDailyExpenses = async (): Promise<Expense[]> => {
-  // Obtener fecha actual en formato YYYY-MM-DD
+
   const today = new Date().toISOString().split('T')[0];
-  
+
   const { data, error } = await supabase
     .from('expenses')
     .select('*')
@@ -30,9 +23,6 @@ export const getDailyExpenses = async (): Promise<Expense[]> => {
   return data || [];
 };
 
-/**
- * Obtiene gastos con filtros opcionales
- */
 export const getExpenses = async (filters: ExpenseFilters): Promise<Expense[]> => {
   let query = supabase
     .from('expenses')
@@ -58,9 +48,6 @@ export const getExpenses = async (filters: ExpenseFilters): Promise<Expense[]> =
   return data || [];
 };
 
-/**
- * Crea un nuevo gasto
- */
 export const createExpense = async (expenseData: CreateExpenseRequest): Promise<Expense> => {
   const { description, amount, category } = expenseData;
 
