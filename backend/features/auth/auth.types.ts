@@ -1,6 +1,3 @@
-/**
- * Types para el módulo de Autenticación
- */
 
 export interface User {
   id: string;
@@ -31,9 +28,6 @@ export interface RegisterResponse {
   userId: string;
 }
 
-/**
- * Tipo interno de usuario en la BD
- */
 export interface DbUser {
   id: string;
   email: string;
@@ -43,9 +37,7 @@ export interface DbUser {
   created_at?: string;
 }
 
-/**
- * Payload del JWT
- */
+
 export interface JWTPayload {
   id: string;
   role: string;
