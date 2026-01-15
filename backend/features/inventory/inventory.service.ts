@@ -1,24 +1,16 @@
 import { supabase } from '../../config/supabase';
 import type { Supply, CreateSupplyRequest, RegisterPurchaseRequest } from './inventory.types';
-import { 
-  ValidationError, 
-  NotFoundError 
+import {
+  ValidationError,
+  NotFoundError
 } from '../../middleware/errorHandler';
 
-/**
- * InventoryService - Lógica de negocio para Inventario
- * Todas las funciones retornan datos puros (sin objetos Response de Express)
- */
-
-/**
- * Obtiene lista de insumos ordenada por nombre
- */
 export const getSupplies = async (): Promise<Supply[]> => {
   const { data, error } = await supabase
     .from('supplies')
     .select('*')
     .order('name');
-  
+
   if (error) {
     throw new Error(`Error fetching supplies: ${error.message}`);
   }
@@ -26,9 +18,6 @@ export const getSupplies = async (): Promise<Supply[]> => {
   return data || [];
 };
 
-/**
- * Registra un insumo nuevo
- */
 export const createSupply = async (supplyData: CreateSupplyRequest): Promise<Supply> => {
   const { name, unit, min_stock } = supplyData;
 
@@ -49,10 +38,6 @@ export const createSupply = async (supplyData: CreateSupplyRequest): Promise<Sup
   return data;
 };
 
-/**
- * Registra una compra (aumenta stock) usando transacción RPC
- * Esto registra automáticamente el gasto asociado
- */
 export const registerPurchase = async (purchaseData: RegisterPurchaseRequest): Promise<void> => {
   const { supplyId, quantity, cost, description } = purchaseData;
 
@@ -60,7 +45,6 @@ export const registerPurchase = async (purchaseData: RegisterPurchaseRequest): P
     throw new Error('Faltan datos requeridos');
   }
 
-  // Obtenemos el nombre primero (necesario para el log de gastos)
   const { data: supply, error: supplyError } = await supabase
     .from('supplies')
     .select('name')
@@ -71,7 +55,6 @@ export const registerPurchase = async (purchaseData: RegisterPurchaseRequest): P
     throw new Error('Insumo no encontrado');
   }
 
-  // LLAMADA RPC TRANSACCIONAL
   const { error } = await supabase.rpc('register_purchase_transaction', {
     p_supply_id: supplyId,
     p_quantity: quantity,
