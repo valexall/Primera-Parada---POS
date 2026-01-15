@@ -1,7 +1,3 @@
-/**
- * Types para el módulo de Recibos
- * Representa la estructura de datos entre el backend y frontend
- */
 
 export interface Receipt {
   id: string;
@@ -43,9 +39,6 @@ export interface ReceiptHistoryFilters {
   limit?: number;
 }
 
-/**
- * Tipos internos de la base de datos (Supabase)
- */
 
 export interface DbReceipt {
   id: string;
