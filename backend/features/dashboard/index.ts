@@ -1,7 +1,4 @@
-/**
- * Barrel export para el módulo de Dashboard
- * Facilita las importaciones desde otros módulos
- */
+
 
 export * from './dashboard.types';
 export * as DashboardService from './dashboard.service';
