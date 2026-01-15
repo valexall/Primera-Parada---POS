@@ -1,7 +1,3 @@
-/**
- * Barrel export para el módulo de Inventario
- * Facilita las importaciones desde otros módulos
- */
 
 export * from './inventory.types';
 export * as InventoryService from './inventory.service';
