@@ -1,18 +1,12 @@
 import { supabase } from '../../config/supabase';
 import type { MenuItem, CreateMenuItemRequest, UpdateMenuItemRequest, DailyMenuStats } from './menu.types';
-import { 
-  ValidationError, 
-  NotFoundError, 
-  ConflictError 
+import {
+  ValidationError,
+  NotFoundError,
+  ConflictError
 } from '../../middleware/errorHandler';
 
-/**
- * MenuService - Lógica de negocio para el menú
- */
 
-/**
- * Obtiene todos los items del menú
- */
 export const getAllMenuItems = async (): Promise<MenuItem[]> => {
   const { data, error } = await supabase
     .from('menu_items')
@@ -26,13 +20,9 @@ export const getAllMenuItems = async (): Promise<MenuItem[]> => {
   return data || [];
 };
 
-/**
- * Agrega un nuevo item al menú
- */
 export const addMenuItem = async (itemData: CreateMenuItemRequest): Promise<MenuItem> => {
   const { name, price } = itemData;
 
-  // ✅ Validaciones con errores específicos
   if (!name || price === undefined || price === null) {
     throw new ValidationError('Nombre y precio son requeridos');
   }
@@ -55,7 +45,6 @@ export const addMenuItem = async (itemData: CreateMenuItemRequest): Promise<Menu
     .single();
 
   if (error) {
-    // ✅ Manejo específico de duplicados
     if (error.code === '23505') {
       throw new ConflictError('Ya existe un ítem con ese nombre');
     }
@@ -65,9 +54,6 @@ export const addMenuItem = async (itemData: CreateMenuItemRequest): Promise<Menu
   return data;
 };
 
-/**
- * Actualiza un item del menú
- */
 export const updateMenuItem = async (id: string, updates: UpdateMenuItemRequest): Promise<MenuItem> => {
   if (!id) {
     throw new ValidationError('El ID del ítem es requerido');
@@ -111,9 +97,6 @@ export const updateMenuItem = async (id: string, updates: UpdateMenuItemRequest)
   return data;
 };
 
-/**
- * Elimina un item del menú
- */
 export const deleteMenuItem = async (id: string): Promise<void> => {
   if (!id) {
     throw new ValidationError('El ID del ítem es requerido');
@@ -129,18 +112,12 @@ export const deleteMenuItem = async (id: string): Promise<void> => {
   }
 };
 
-/**
- * Obtiene estadísticas diarias de platos vendidos
- * ✅ OPTIMIZADO: Usa RPC con JOIN único en lugar de Query N+1
- * Performance: ~1800ms → ~50ms (reducción de 97%)
- */
 export const getDailyStats = async (): Promise<DailyMenuStats[]> => {
-  // Obtener el inicio del día actual
+
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
   const startTimestamp = startOfDay.getTime();
 
-  // ✅ UNA SOLA QUERY: RPC con JOIN y agregación en la base de datos
   const { data, error } = await supabase.rpc('get_daily_menu_stats', {
     start_timestamp: startTimestamp
   });
@@ -149,13 +126,9 @@ export const getDailyStats = async (): Promise<DailyMenuStats[]> => {
     throw new Error(`Error fetching daily stats: ${error.message}`);
   }
 
-  // El RPC ya retorna los datos agregados y ordenados
   return data || [];
 };
 
-/**
- * Cambia la disponibilidad de un item del menú
- */
 export const toggleAvailability = async (id: string, isAvailable: boolean): Promise<MenuItem> => {
   if (!id) {
     throw new Error('Menu item ID is required');
