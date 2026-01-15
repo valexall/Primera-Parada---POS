@@ -1,7 +1,4 @@
-/**
- * Types para el módulo de Inventario
- * Representa la estructura de datos entre el backend y frontend
- */
+
 
 export interface Supply {
   id: string;
@@ -12,9 +9,6 @@ export interface Supply {
   created_at: string;
 }
 
-/**
- * DTOs (Data Transfer Objects) para requests
- */
 
 export interface CreateSupplyRequest {
   name: string;
