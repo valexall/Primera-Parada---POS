@@ -1,7 +1,3 @@
-/**
- * Types para el módulo de Historial de Menú
- * Representa la estructura de datos entre el backend y frontend
- */
 
 export interface MenuSnapshot {
   id: string;
@@ -80,9 +76,6 @@ export interface DayComparison {
   items_sold_change_percent: number;
 }
 
-/**
- * DTOs (Data Transfer Objects) para requests
- */
 
 export interface GenerateSnapshotRequest {
   date?: string;
