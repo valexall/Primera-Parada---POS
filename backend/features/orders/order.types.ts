@@ -1,10 +1,7 @@
-/**
- * Types para el módulo de Órdenes
- * Representa la estructura de datos entre el backend y frontend
- */
+
 
 export interface OrderItem {
-  id?: string; 
+  id?: string;
   menuItemId: string;
   menuItemName: string;
   price: number;
@@ -23,9 +20,7 @@ export interface Order {
   items: OrderItem[];
 }
 
-/**
- * DTOs (Data Transfer Objects) para requests
- */
+
 
 export interface CreateOrderRequest {
   items: OrderItem[];
@@ -54,9 +49,6 @@ export interface OrderHistoryFilters {
   limit?: number;
 }
 
-/**
- * Respuesta paginada genérica
- */
 export interface PaginatedResponse<T> {
   data: T[];
   pagination: {
@@ -67,10 +59,6 @@ export interface PaginatedResponse<T> {
   };
 }
 
-/**
- * Tipos internos de la base de datos (Supabase)
- * Representan la estructura raw de la BD
- */
 
 export interface DbOrderItem {
   id: string;
