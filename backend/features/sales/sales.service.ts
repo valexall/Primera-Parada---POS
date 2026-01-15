@@ -1,32 +1,22 @@
 import { supabase } from '../../config/supabase';
-import type { 
-  SaleWithOrder, 
-  CreateSaleRequest, 
+import type {
+  SaleWithOrder,
+  CreateSaleRequest,
   CreatePartialSaleRequest,
   SalesHistoryFilters,
   PartialSaleResponse,
   PaginatedResponse
 } from './sales.types';
-import { 
-  ValidationError, 
-  NotFoundError, 
-  ConflictError 
+import {
+  ValidationError,
+  NotFoundError,
+  ConflictError
 } from '../../middleware/errorHandler';
 
-/**
- * SalesService - Lógica de negocio para Ventas
- * Todas las funciones retornan datos puros (sin objetos Response de Express)
- */
 
-/**
- * Obtiene el historial de ventas con filtros opcionales y paginación
- * ✅ Usa Resource Embedding - O(1) query
- * ✅ Server-Side Pagination con .range()
- */
 export const getSalesHistory = async (filters: SalesHistoryFilters): Promise<PaginatedResponse<SaleWithOrder>> => {
   const { startDate, endDate, page = 1, limit = 20 } = filters;
 
-  // Calcular rango para paginación
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
@@ -45,11 +35,10 @@ export const getSalesHistory = async (filters: SalesHistoryFilters): Promise<Pag
           quantity
         )
       )
-    `, { count: 'exact' })  // Habilitar conteo total
+    `, { count: 'exact' })
     .order('created_at', { ascending: false })
-    .range(from, to);  // Aplicar paginación
+    .range(from, to);
 
-  // Filtros opcionales de fecha
   if (startDate && endDate) {
     query = query
       .gte('created_at', `${startDate}T00:00:00`)
@@ -76,18 +65,13 @@ export const getSalesHistory = async (filters: SalesHistoryFilters): Promise<Pag
   };
 };
 
-/**
- * Crea una venta completa
- */
 export const createSale = async (saleData: CreateSaleRequest) => {
   const { orderId, paymentMethod, amount, isReceiptIssued = false } = saleData;
 
-  // Validación de datos obligatorios
   if (!orderId || !paymentMethod || !amount) {
     throw new Error('Faltan datos requeridos');
   }
 
-  // Registrar la venta
   const { data: sale, error: saleError } = await supabase
     .from('sales')
     .insert({
@@ -103,7 +87,6 @@ export const createSale = async (saleData: CreateSaleRequest) => {
     throw new Error(`Error creating sale: ${saleError.message}`);
   }
 
-  // Actualizar estado de la orden
   const { error: orderUpdateError } = await supabase
     .from('orders')
     .update({ status: 'Pagado' })
@@ -116,9 +99,6 @@ export const createSale = async (saleData: CreateSaleRequest) => {
   return sale;
 };
 
-/**
- * Crea una venta parcial (solo algunos items de la orden)
- */
 export const createPartialSale = async (
   partialSaleData: CreatePartialSaleRequest
 ): Promise<PartialSaleResponse> => {
@@ -129,12 +109,10 @@ export const createPartialSale = async (
     selectedItems
   } = partialSaleData;
 
-  // Validación de datos obligatorios
   if (!orderId || !paymentMethod || !selectedItems || selectedItems.length === 0) {
     throw new Error('Faltan datos requeridos');
   }
 
-  // Obtener la orden original
   const { data: orderData, error: orderError } = await supabase
     .from('orders')
     .select('*')
@@ -145,7 +123,6 @@ export const createPartialSale = async (
     throw new Error('Orden no encontrada');
   }
 
-  // Obtener los items de la orden
   const { data: orderItems, error: itemsError } = await supabase
     .from('order_items')
     .select('*')
@@ -155,7 +132,6 @@ export const createPartialSale = async (
     throw new Error(`Error fetching order items: ${itemsError.message}`);
   }
 
-  // Calcular el monto de los items seleccionados y validar
   let totalAmount = 0;
   const itemsToRemove: any[] = [];
   const remainingItems: any[] = [];
@@ -173,10 +149,10 @@ export const createPartialSale = async (
       totalAmount += item.price * selectedItem.quantity;
 
       if (selectedItem.quantity === item.quantity) {
-        // Marcar para eliminar completamente
+
         itemsToRemove.push(item.id);
       } else {
-        // Actualizar cantidad restante
+
         remainingItems.push({
           id: item.id,
           newQuantity: item.quantity - selectedItem.quantity
@@ -185,11 +161,9 @@ export const createPartialSale = async (
     }
   }
 
-  // Crear un nuevo ID para la venta parcial
   const timestamp = Date.now();
   const partialOrderId = `${orderId}-P${timestamp.toString().slice(-6)}`;
 
-  // Crear una nueva orden para la venta parcial (para mantener historial)
   const { data: partialOrderData, error: partialOrderError } = await supabase
     .from('orders')
     .insert([{
@@ -205,7 +179,6 @@ export const createPartialSale = async (
     throw new Error(`Error creating partial order: ${partialOrderError.message}`);
   }
 
-  // Copiar los items seleccionados a la nueva orden
   const partialOrderItems = selectedItems.map(si => {
     const originalItem = orderItems?.find(oi => oi.menu_item_id === si.menuItemId);
     return {
@@ -226,7 +199,6 @@ export const createPartialSale = async (
     throw new Error(`Error inserting partial order items: ${insertItemsError.message}`);
   }
 
-  // Registrar la venta
   const { data: saleData, error: saleError } = await supabase
     .from('sales')
     .insert({
@@ -242,8 +214,6 @@ export const createPartialSale = async (
     throw new Error(`Error creating sale: ${saleError.message}`);
   }
 
-  // Actualizar la orden original
-  // Eliminar items completamente pagados
   if (itemsToRemove.length > 0) {
     const { error: deleteError } = await supabase
       .from('order_items')
@@ -254,8 +224,6 @@ export const createPartialSale = async (
       throw new Error(`Error removing paid items: ${deleteError.message}`);
     }
   }
-
-  // Actualizar cantidades de items parcialmente pagados
   for (const item of remainingItems) {
     const { error: updateError } = await supabase
       .from('order_items')
@@ -267,13 +235,11 @@ export const createPartialSale = async (
     }
   }
 
-  // Verificar si quedan items en la orden original
   const { data: remainingOrderItems } = await supabase
     .from('order_items')
     .select('*')
     .eq('order_id', orderId);
 
-  // Si no quedan items, marcar la orden original como Pagado
   if (!remainingOrderItems || remainingOrderItems.length === 0) {
     const { error: updateOrderError } = await supabase
       .from('orders')
