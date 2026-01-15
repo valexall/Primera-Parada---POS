@@ -1,6 +1,3 @@
-/**
- * Types para el módulo de Menú
- */
 
 export interface MenuItem {
   id: string;
