@@ -15,8 +15,7 @@ const KitchenPage: React.FC = () => {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
   const [dailyStats, setDailyStats] = useState<{ name: string; quantity: number }[]>([]);
-  const [showStats, setShowStats] = useState(false);
-  // ✅ Usar useRef en lugar de useState para evitar re-renders innecesarios
+  const [showStats, setShowStats] = useState(false); 
   const lastLocalUpdateRef = useRef<{ orderId: string; timestamp: number } | null>(null);
 
   const loadOrders = useCallback(async (isInitial = false) => {
@@ -35,14 +34,12 @@ const KitchenPage: React.FC = () => {
       if (isInitial) setIsLoading(false);
     }
   }, [filter]);
-
-  // Carga inicial (muestra skeleton)
+ 
   useEffect(() => {
     loadOrders(true);
     loadDailyStats();
   }, [loadOrders]);
-
-  // Realtime (actualización local instantánea sin peticiones HTTP)
+ 
   useEffect(() => {
     const channel = supabaseClient
       .channel('kitchen-orders')
@@ -51,23 +48,18 @@ const KitchenPage: React.FC = () => {
         schema: 'public', 
         table: 'orders' 
       }, async (payload) => {
-        try {
-          // Obtener la orden completa desde el backend (incluye order_items)
+        try { 
           const newOrder = await orderService.getById(payload.new.id);
-          
-          // Verificar si la orden coincide con el filtro actual
+           
           const shouldDisplay = filter === 'Todos' || newOrder.status === filter;
           
           if (shouldDisplay) {
-            setOrders(current => {
-              // ✅ EVITAR DUPLICADOS: Solo agregar si no existe
+            setOrders(current => { 
               const exists = current.some(o => o.id === newOrder.id);
               if (exists) return current;
               return [newOrder, ...current];
             });
-          }
-          
-          // Actualizar stats solo si es relevante (orden entregada)
+          } 
           if (newOrder.status === 'Entregado') {
             loadDailyStats();
           }
@@ -89,8 +81,7 @@ const KitchenPage: React.FC = () => {
             const shouldDisplay = filter === 'Todos' || updatedData.status === filter;
             
             if (existingOrder) {
-              if (shouldDisplay) {
-                // Actualizar campos básicos manteniendo los items existentes
+              if (shouldDisplay) { 
                 return current.map(o => 
                   o.id === updatedData.id 
                     ? { 
@@ -103,21 +94,17 @@ const KitchenPage: React.FC = () => {
                       }
                     : o
                 );
-              } else {
-                // Remover si ya no coincide con el filtro
+              } else { 
                 return current.filter(o => o.id !== updatedData.id);
               }
-            } else if (shouldDisplay) {
-              // Si no existe localmente, obtener orden completa
+            } else if (shouldDisplay) { 
               orderService.getById(updatedData.id).then(fullOrder => {
                 setOrders(curr => [fullOrder, ...curr]);
               }).catch(err => console.error('Error fetching updated order:', err));
             }
             
             return current;
-          });
-          
-          // Actualizar stats si el cambio es a Entregado
+          }); 
           if (updatedData.status === 'Entregado' && previousStatus !== 'Entregado') {
             loadDailyStats();
           }
@@ -138,13 +125,11 @@ const KitchenPage: React.FC = () => {
         schema: 'public', 
         table: 'order_items' 
       }, async (payload) => {
-        try {
-          // Cuando cambian los items de una orden, recargar esa orden específica
+        try { 
           const orderId = payload.new?.order_id || payload.old?.order_id;
           
           if (!orderId) return;
-          
-          // Evitar actualizar si acabamos de hacer un cambio local (dentro de 1 segundo)
+           
           if (lastLocalUpdateRef.current && 
               lastLocalUpdateRef.current.orderId === orderId && 
               Date.now() - lastLocalUpdateRef.current.timestamp < 1000) {
@@ -176,7 +161,7 @@ const KitchenPage: React.FC = () => {
     return () => { 
       supabaseClient.removeChannel(channel); 
     };
-  }, [filter]); // ❌ REMOVER lastLocalUpdate de las dependencias para evitar re-suscripciones
+  }, [filter]);  
 
   const loadDailyStats = async () => {
     try {
@@ -188,26 +173,23 @@ const KitchenPage: React.FC = () => {
   };
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    // Optimistic Update: Actualizar UI antes que el servidor
+  
     setOrders(current => current.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     
     try {
-      await orderService.updateStatus(orderId, newStatus);
-      // No se necesita loadOrders() - Realtime lo manejará
-    } catch (error) {
-      // Revertir en caso de error
+      await orderService.updateStatus(orderId, newStatus); 
+    } catch (error) { 
       console.error('Error updating status:', error);
       await loadOrders(false);
     }
   };
 
   const handleItemStatusChange = async (orderId: string, itemId: string, currentStatus: string) => {
-    // Solo permitir cambiar de Pendiente a Listo
+     
     if (currentStatus !== 'Pendiente') return;
 
     const newStatus = 'Listo';
-
-    // Optimistic Update: Actualizar UI inmediatamente
+ 
     setOrders(current => current.map(order => {
       if (order.id === orderId) {
         return {
@@ -220,8 +202,7 @@ const KitchenPage: React.FC = () => {
       return order;
     }));
 
-    try {
-      // Si el item no tiene ID, significa que fue recién agregado y necesitamos recargar la orden primero
+    try { 
       if (!itemId || itemId === 'undefined') {
         toast.error('Espera un momento, el plato se está sincronizando...');
         return;
@@ -233,21 +214,16 @@ const KitchenPage: React.FC = () => {
         icon: '✅',
         duration: 1500,
       });
-      
-      // No se necesita loadOrders() - Realtime lo manejará o ya actualizamos localmente
+       
     } catch (error) {
       console.error('Error updating item status:', error);
-      toast.error('Error al actualizar el plato');
-      // Revertir en caso de error
+      toast.error('Error al actualizar el plato'); 
       await loadOrders(false);
     }
   };
 
-  const handleUpdateOrder = async (orderId: string, items: OrderItem[]) => {
-    // Marcar actualización local para evitar conflictos con realtime
-    lastLocalUpdateRef.current = { orderId, timestamp: Date.now() };
-    
-    // Optimistic Update: Actualizar UI inmediatamente
+  const handleUpdateOrder = async (orderId: string, items: OrderItem[]) => { 
+    lastLocalUpdateRef.current = { orderId, timestamp: Date.now() }; 
     setOrders(current => current.map(order => {
       if (order.id === orderId) {
         return {
@@ -261,39 +237,34 @@ const KitchenPage: React.FC = () => {
 
     try {
       await orderService.updateItems(orderId, items);
-      
-      // Recargar la orden desde el backend para obtener los IDs correctos de los items
+       
       const updatedOrder = await orderService.getById(orderId);
       setOrders(current => current.map(order => 
         order.id === orderId ? updatedOrder : order
       ));
-      
-      // Limpiar el marcador después de 1 segundo
+       
       setTimeout(() => lastLocalUpdateRef.current = null, 1000);
     } catch (error) {
       console.error('Error updating order items:', error);
       toast.error('Error al actualizar el pedido');
       lastLocalUpdateRef.current = null;
-      // Revertir en caso de error
+    
       await loadOrders(false);
     }
   };
 
   const handleDeleteOrder = async (orderId: string) => {
-    try {
-      // Optimistic Update: Remover de la UI antes que el servidor
+    try { 
       setOrders(current => current.filter(o => o.id !== orderId));
       setDeletingOrderId(null);
       
-      await orderService.delete(orderId);
-      // No se necesita loadOrders() - Realtime lo manejará
+      await orderService.delete(orderId); 
       
       toast.success('Pedido cancelado exitosamente', {
         icon: '🗑️',
         duration: 2000,
       });
-    } catch (error: any) {
-      // Revertir en caso de error
+    } catch (error: any) { 
       await loadOrders(false);
       toast.error(error.response?.data?.error || 'Error al cancelar el pedido');
     }
