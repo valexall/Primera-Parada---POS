@@ -18,8 +18,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  
-  // Estado para controlar el menú lateral en móvil
+   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const getLinkClass = (path: string) => {
@@ -36,8 +35,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     logout();
     navigate('/login');
   };
-
-  // Contenido del menú de navegación (Reutilizable)
+ 
   const NavLinks = () => (
     <>
       <div className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase px-4 mb-2 tracking-wider">Operación</div>
