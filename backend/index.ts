@@ -1,8 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-
-// Rutas organizadas por features (arquitectura Vertical Slice)
+ 
 import authRoutes from './features/auth/auth.routes';
 import menuRoutes from './features/menu/menu.routes';
 import orderRoutes from './features/orders/order.routes';
@@ -14,8 +13,7 @@ import receiptRoutes from './features/receipts/receipts.routes';
 import menuHistoryRoutes from './features/menu-history/menu-history.routes';
 import chatbotRoutes from './features/chatbot/chatbot.routes';
 import { transcriptionRoutes } from './features/transcription';
-
-// Middleware centralizado de manejo de errores
+ 
 import { errorHandler, notFoundHandler, errorMetrics } from './middleware/errorHandler';
 
 const app = express();
@@ -24,8 +22,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
-
-// Registro de rutas de la API
+ 
 app.use('/api/auth', authRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
@@ -46,8 +43,7 @@ app.get('/api/health', (req, res) => {
     environment: process.env.NODE_ENV || 'development'
   });
 });
-
-// Métricas resumidas de errores (solo para debugging)
+ 
 app.get('/api/metrics/errors', (req, res) => {
   const summary = errorMetrics.getSummary();
   res.json({
@@ -55,8 +51,7 @@ app.get('/api/metrics/errors', (req, res) => {
     ...summary
   });
 });
-
-// Métricas detalladas de errores (uso interno)
+ 
 app.get('/api/metrics/errors/full', (req, res) => {
   const fullMetrics = errorMetrics.getMetrics();
   res.json({
@@ -64,11 +59,9 @@ app.get('/api/metrics/errors/full', (req, res) => {
     ...fullMetrics
   });
 });
-
-// Middleware 404: rutas no encontradas (debe ir antes del error handler)
+ 
 app.use(notFoundHandler);
-
-// Middleware global de errores (debe ser el último)
+ 
 app.use(errorHandler);
 
 const server = app.listen(PORT, () => {
