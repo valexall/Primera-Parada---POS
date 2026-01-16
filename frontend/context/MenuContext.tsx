@@ -17,8 +17,7 @@ const MenuContext = createContext<MenuContextType | undefined>(undefined);
 export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Carga inicial del menú
+ 
   const loadMenu = useCallback(async () => {
     try {
       const items = await menuService.getAll();
@@ -29,8 +28,7 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsLoading(false);
     }
   }, []);
-
-  // Refetch manual (para casos edge)
+ 
   const refetchMenu = async () => {
     try {
       const items = await menuService.getAll();
@@ -39,8 +37,7 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Error refetching menu:', error);
     }
   };
-
-  // Optimistic update local (sin refetch)
+ 
   const updateMenuItemLocal = (id: string, updates: Partial<MenuItem>) => {
     setMenuItems(current => 
       current.map(item => item.id === id ? { ...item, ...updates } : item)
@@ -54,13 +51,11 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const removeMenuItemLocal = (id: string) => {
     setMenuItems(current => current.filter(item => item.id !== id));
   };
-
-  // Carga inicial
+ 
   useEffect(() => {
     loadMenu();
   }, [loadMenu]);
-
-  // ⚡ REALTIME: Suscripción a cambios en menu_items (igual que orders)
+ 
   useEffect(() => {
     const channel = supabaseClient
       .channel('menu-items-realtime')
@@ -72,7 +67,7 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const newItem = payload.new as MenuItem;
         console.log('🆕 Nuevo item en menú (realtime):', newItem.name);
         setMenuItems(current => {
-          // Evitar duplicados
+           
           if (current.some(item => item.id === newItem.id)) {
             return current;
           }
@@ -121,9 +116,7 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     </MenuContext.Provider>
   );
 };
-
-// Separar el hook en otro archivo para Fast Refresh
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 export const useMenu = (): MenuContextType => {
   const context = useContext(MenuContext);
   if (!context) {
@@ -131,3 +124,4 @@ export const useMenu = (): MenuContextType => {
   }
   return context;
 };
+
