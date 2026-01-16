@@ -8,9 +8,8 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
-  const { user, isAuthenticated, loading } = useAuth(); // Obtenemos loading
-
-  // 1. Si está verificando sesión, mostramos una pantalla de carga o nada
+  const { user, isAuthenticated, loading } = useAuth();  
+ 
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
@@ -18,18 +17,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
       </div>
     );
   }
-
-  // 2. Si terminó de cargar y NO está autenticado, ahí sí lo sacamos
+ 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-
-  // 3. Verificación de roles (igual que antes)
+ 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
 };
+
 
 export default ProtectedRoute;
