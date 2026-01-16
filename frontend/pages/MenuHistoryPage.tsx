@@ -40,16 +40,13 @@ const MenuHistoryPage: React.FC = () => {
   const [dayComparison, setDayComparison] = useState<DayComparison | null>(null);
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<'list' | 'detail' | 'analytics'>('list');
-  
-  // Pagination
+   
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  
-  // Filters
+   
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  
-  // Generate snapshot date
+   
   const [generateDate, setGenerateDate] = useState('');
 
   useEffect(() => {
@@ -105,8 +102,7 @@ const MenuHistoryPage: React.FC = () => {
     setHourlySalesPattern(hourlyPattern);
   };
 
-  const handleGenerateSnapshot = async () => {
-    // Get local date in YYYY-MM-DD format
+  const handleGenerateSnapshot = async () => { 
     const today = new Date();
     const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     const dateToGenerate = generateDate || localDate;
@@ -116,7 +112,7 @@ const MenuHistoryPage: React.FC = () => {
     
     if (result) {
       toast.success('Snapshot generado exitosamente', { id: 'generate' });
-      setGenerateDate(''); // Clear the input
+      setGenerateDate('');  
       loadSnapshots();
     } else {
       toast.error('Error al generar snapshot', { id: 'generate' });
@@ -126,14 +122,12 @@ const MenuHistoryPage: React.FC = () => {
   const handleViewSnapshot = async (snapshot: MenuHistorySnapshot) => {
     setSelectedSnapshot(snapshot);
     setView('detail');
-    
-    // Load comparison data
+     
     const comparison = await menuHistoryService.compareSnapshots(snapshot.snapshot_date);
     setDayComparison(comparison);
   };
 
-  const formatDate = (dateString: string) => {
-    // Parse date as local to avoid timezone issues
+  const formatDate = (dateString: string) => { 
     const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
     const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('es-PE', {
@@ -906,3 +900,4 @@ const MenuHistoryPage: React.FC = () => {
   };
 
   export default MenuHistoryPage;
+
