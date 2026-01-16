@@ -11,8 +11,7 @@ const HistoryPage: React.FC = () => {
   const [endDate, setEndDate] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-  
-  // Estados de paginación
+   
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -43,9 +42,9 @@ const HistoryPage: React.FC = () => {
   };
 
   const handleApplyFilters = () => {
-    setPage(1); // Resetear a página 1 al aplicar nuevos filtros
+    setPage(1);  
     if (page === 1) {
-      loadHistory(); // Si ya estamos en página 1, recargar manualmente
+      loadHistory();  
     }
   };
 
@@ -332,3 +331,4 @@ const HistoryPage: React.FC = () => {
 };
 
 export default HistoryPage;
+
