@@ -16,15 +16,12 @@ const CashierPage: React.FC = () => {
   const [needReceipt, setNeedReceipt] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentReceipt, setCurrentReceipt] = useState<ReceiptType | null>(null);
-  
-  // NUEVO ESTADO: Controla si mostramos el panel de cobro en móvil
+   
   const [showMobilePayment, setShowMobilePayment] = useState(false);
-  
-  // NUEVO ESTADO: Items seleccionados para cobro parcial
+   
   const [selectedItems, setSelectedItems] = useState<Map<string, number>>(new Map());
   const [isPartialPayment, setIsPartialPayment] = useState(false);
-  
-  // Estado para el modal de confirmación de pago
+   
   const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
 
   const loadOrdersToPay = useCallback(async (isInitial = false) => {
@@ -36,18 +33,15 @@ const CashierPage: React.FC = () => {
       if (isInitial) setLoading(false);
     }
   }, []);
-
-  // Carga inicial
+ 
   useEffect(() => {
     loadOrdersToPay(true);
-    
-    // Limpiar todos los toasts cuando el componente se desmonte
+     
     return () => {
       toast.dismiss();
     };
   }, [loadOrdersToPay]);
-
-  // Sincronización en tiempo real
+ 
   useEffect(() => {
     const channel = supabaseClient
       .channel('cashier-orders')
@@ -59,22 +53,18 @@ const CashierPage: React.FC = () => {
         try {
           const updatedData = payload.new;
           const oldStatus = payload.old.status;
-          
-          // Si una orden cambió a "Entregado", agregarla a la lista
+           
           if (updatedData.status === 'Entregado' && oldStatus !== 'Entregado') {
             const fullOrder = await orderService.getById(updatedData.id);
-            setOrders(current => {
-              // ✅ EVITAR DUPLICADOS: Solo agregar si no existe
+            setOrders(current => { 
               const exists = current.some(o => o.id === fullOrder.id);
               if (exists) return current;
               return [fullOrder, ...current];
             });
-          }
-          // Si una orden ya no está en "Entregado" (fue pagada), quitarla
+          } 
           else if (updatedData.status !== 'Entregado' && oldStatus === 'Entregado') {
             setOrders(current => current.filter(o => o.id !== updatedData.id));
-            
-            // Si la orden que estamos viendo fue pagada, limpiar selección
+             
             if (selectedOrder?.id === updatedData.id) {
               setSelectedOrder(null);
               setShowMobilePayment(false);
@@ -93,8 +83,7 @@ const CashierPage: React.FC = () => {
 
   const handleSelectOrder = (order: Order) => {
     setSelectedOrder(order);
-    setShowMobilePayment(true); // En móvil, pasamos a la vista de pago
-    // Resetear selección de items
+    setShowMobilePayment(true);  
     setSelectedItems(new Map());
     setIsPartialPayment(false);
   };
@@ -123,14 +112,11 @@ const CashierPage: React.FC = () => {
       const newMap = new Map(prev);
       const currentQty = newMap.get(menuItemId) || 0;
       
-      if (currentQty === 0) {
-        // Seleccionar con cantidad 1
+      if (currentQty === 0) { 
         newMap.set(menuItemId, 1);
-      } else if (currentQty < maxQuantity) {
-        // Incrementar cantidad
+      } else if (currentQty < maxQuantity) { 
         newMap.set(menuItemId, currentQty + 1);
-      } else {
-        // Deseleccionar
+      } else { 
         newMap.delete(menuItemId);
       }
       
@@ -144,8 +130,7 @@ const CashierPage: React.FC = () => {
 
   const handleProcessPayment = () => {
     if (!selectedOrder) return;
-
-    // Validar si es pago parcial y no hay items seleccionados
+ 
     if (isPartialPayment && !hasSelectedItems()) {
       toast.error('Selecciona al menos un item para cobrar', {
         duration: 3000,
@@ -156,15 +141,13 @@ const CashierPage: React.FC = () => {
       });
       return;
     }
-
-    // Abrir modal de confirmación
+ 
     setShowPaymentConfirmation(true);
   };
 
   const executePayment = async () => {
     if (!selectedOrder) return;
-
-    // Limpiar cualquier toast previo
+ 
     toast.dismiss();
     
     let toastId: string | undefined;
@@ -179,24 +162,21 @@ const CashierPage: React.FC = () => {
       
       let sale;
       
-      if (isPartialPayment && hasSelectedItems()) {
-        // Preparar items seleccionados para el backend
+      if (isPartialPayment && hasSelectedItems()) { 
         const selectedItemsArray: SelectedItem[] = [];
         selectedItems.forEach((quantity, menuItemId) => {
           if (quantity > 0) {
             selectedItemsArray.push({ menuItemId, quantity });
           }
         });
-
-        // Crear venta parcial
+ 
         sale = await financeService.createPartialSale({
           orderId: selectedOrder.id,
           paymentMethod,
           isReceiptIssued: needReceipt,
           selectedItems: selectedItemsArray
         });
-      } else {
-        // Crear venta completa (original)
+      } else { 
         sale = await financeService.createSale(
           selectedOrder.id,
           calculateTotal(selectedOrder),
@@ -204,11 +184,9 @@ const CashierPage: React.FC = () => {
           needReceipt
         );
       }
-      
-      // Cerrar el toast de loading
+       
       toast.dismiss(toastId);
-      
-      // Si se solicitó recibo, obtenerlo y mostrarlo
+       
       if (needReceipt && sale.id) {
         try {
           const receipt = await receiptService.getReceipt(sale.id);
@@ -242,8 +220,7 @@ const CashierPage: React.FC = () => {
           }
         });
       }
-      
-      // Limpiar estado inmediatamente
+       
       setSelectedOrder(null);
       setShowMobilePayment(false);
       setNeedReceipt(false);
@@ -253,8 +230,7 @@ const CashierPage: React.FC = () => {
       // Recargar órdenes
       await loadOrdersToPay();
       
-    } catch (error) {
-      // Cerrar el toast de loading y mostrar error
+    } catch (error) { 
       if (toastId) {
         toast.dismiss(toastId);
       }
@@ -628,5 +604,6 @@ const CashierPage: React.FC = () => {
   </>
   );
 };
+
 
 export default CashierPage;
