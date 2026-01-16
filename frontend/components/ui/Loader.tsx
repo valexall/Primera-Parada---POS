@@ -6,8 +6,7 @@ interface LoaderProps {
   color?: string;
   text?: string;
 }
-
-// 1. Spinner giratorio para botones
+ 
 export const Loader: React.FC<LoaderProps> = ({ 
   size = 20, 
   color = 'text-white', 
@@ -20,8 +19,7 @@ export const Loader: React.FC<LoaderProps> = ({
     </div>
   );
 };
-
-// 2. Skeleton Card (Simula una tarjeta de pedido cargando)
+ 
 export const SkeletonCard: React.FC = () => (
   <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 animate-pulse h-64 flex flex-col justify-between">
     <div>
@@ -37,4 +35,5 @@ export const SkeletonCard: React.FC = () => (
     </div>
     <div className="h-12 bg-slate-100 dark:bg-slate-700 rounded-xl w-full mt-4"></div>
   </div>
+
 );
