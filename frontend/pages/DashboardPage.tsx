@@ -8,18 +8,16 @@ import toast from 'react-hot-toast';
 import { SkeletonCard } from '../components/ui/Loader';
 import Receipt from '../components/ui/Receipt';
 
-const DashboardPage: React.FC = () => {
-  // ⚡ OPTIMIZACIÓN: Usar caché para resumen diario (30s)
+const DashboardPage: React.FC = () => { 
   const { 
     data: summary, 
     isLoading: summaryLoading,
     refetch: refetchSummary 
   } = useCachedData({
     fetcher: () => financeService.getDailySummary(),
-    cacheDuration: 30000 // 30 segundos
+    cacheDuration: 30000  
   });
-
-  // ⚡ OPTIMIZACIÓN: Usar caché para gastos (30s)
+ 
   const {
     data: expenses,
     isLoading: expensesLoading,
@@ -36,14 +34,11 @@ const DashboardPage: React.FC = () => {
     end: new Date().toISOString().split('T')[0]
   });
   const [currentReceipt, setCurrentReceipt] = useState<ReceiptType | null>(null);
-  
-  // Estados de paginación
+   
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
-  const [limit] = useState(20); // Registros por página
-  
-  // Estado explícito de carga para historial
+  const [limit] = useState(20);  
   const [historyLoading, setHistoryLoading] = useState(false);
   
   const isLoading = summaryLoading || expensesLoading || historyLoading;
@@ -51,13 +46,11 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     loadHistory();
   }, []);
-
-  // ❌ ELIMINADO: loadData() - Ahora usamos hooks con caché
+ 
 
   const loadHistory = async () => {
     setHistoryLoading(true);
-    try {
-      // Resetear a página 1 cuando se cambian las fechas
+    try { 
       setCurrentPage(1);
       const historyData = await financeService.getSalesHistory(dateRange.start, dateRange.end, 1, limit);
       setHistory(historyData.data);
@@ -101,8 +94,7 @@ const DashboardPage: React.FC = () => {
     );
 
     setNewExpense({ description: '', amount: '', category: '' });
-    
-    // ⚡ OPTIMIZACIÓN: Invalidar caché y recargar
+     
     refetchSummary();
     refetchExpenses();
   };
@@ -405,5 +397,6 @@ const DashboardPage: React.FC = () => {
     </div>
   );
 };
+
 
 export default DashboardPage;
