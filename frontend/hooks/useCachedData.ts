@@ -2,14 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface UseCachedDataOptions<T> {
   fetcher: () => Promise<T>;
-  cacheDuration?: number; // en milisegundos, default: 30 segundos
+  cacheDuration?: number;  
   enabled?: boolean;
 }
 
-/**
- * Hook para cachear datos y evitar refetch innecesarios
- * Útil para datos que no cambian frecuentemente (estadísticas, resúmenes)
- */
+ 
 export function useCachedData<T>(options: UseCachedDataOptions<T>) {
   const { fetcher, cacheDuration = 30000, enabled = true } = options;
   
@@ -25,8 +22,7 @@ export function useCachedData<T>(options: UseCachedDataOptions<T>) {
 
     const now = Date.now();
     const timeSinceLastFetch = now - lastFetchTime;
-
-    // Si no es forzado y el caché es válido, no hacer fetch
+ 
     if (!force && timeSinceLastFetch < cacheDuration && data !== null) {
       console.log(`[useCachedData] Usando caché (válido por ${Math.round((cacheDuration - timeSinceLastFetch) / 1000)}s más)`);
       return;
@@ -52,13 +48,11 @@ export function useCachedData<T>(options: UseCachedDataOptions<T>) {
       }
     }
   }, [fetcher, cacheDuration, enabled, lastFetchTime, data]);
-
-  // Fetch inicial
+ 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  // Cleanup
+ 
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
@@ -69,6 +63,7 @@ export function useCachedData<T>(options: UseCachedDataOptions<T>) {
     data,
     isLoading,
     error,
-    refetch: () => fetchData(true), // Forzar refetch
+    refetch: () => fetchData(true), 
   };
 }
+
