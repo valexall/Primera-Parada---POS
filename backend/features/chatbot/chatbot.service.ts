@@ -21,17 +21,13 @@ export class ChatbotService {
     }
   }
 
-  /**
-   * Procesa un mensaje del usuario y genera una respuesta
-   */
+
   async processMessage(request: ChatRequest): Promise<ChatResponse> {
     try {
       const { message, conversationHistory = [], context = 'help' } = request;
 
-      // Detectar si el mensaje es sobre recomendaciones de menú
       const isMenuQuestion = this.isMenuRecommendationQuery(message);
 
-      // Construir mensajes para el modelo
       const messages: ChatMessage[] = [
         {
           role: 'system',
@@ -44,18 +40,15 @@ export class ChatbotService {
         },
       ];
 
-      // Si la pregunta es sobre menú o el contexto es análisis de menú, obtener datos
       if (isMenuQuestion || context === 'menu-analysis') {
         const menuData = await this.getMenuHistoryData();
-        
+
         if (menuData.length > 0) {
-          // Limitar a los últimos 30 registros para no exceder tokens
+
           const recentData = menuData.slice(0, 30);
-          
-          // Agregar datos al prompt del sistema
+
           messages[0].content += `\n\n📊 DATOS REALES DEL HISTORIAL DE VENTAS (últimos 30 días):\n${JSON.stringify(recentData, null, 2)}`;
-          
-          // También obtener estadísticas resumidas
+
           const stats = this.calculateMenuStats(menuData);
           messages[0].content += `\n\n📈 ESTADÍSTICAS RESUMIDAS:\n${JSON.stringify(stats, null, 2)}`;
         } else {
@@ -63,7 +56,6 @@ export class ChatbotService {
         }
       }
 
-      // Llamar a la API de Groq
       const response = await this.callGroq(messages);
 
       return {
@@ -77,9 +69,6 @@ export class ChatbotService {
     }
   }
 
-  /**
-   * Genera sugerencias de menú basadas en el historial de ventas
-   */
   async generateMenuSuggestions(): Promise<MenuSuggestion[]> {
     try {
       if (!this.groq) {
@@ -94,10 +83,8 @@ export class ChatbotService {
         return [];
       }
 
-      // Limitar datos para evitar tokens excesivos
       const limitedData = menuData.slice(0, 50);
 
-      // Analizar datos con el modelo para generar sugerencias inteligentes
       const prompt = `
 Analiza el siguiente historial de ventas de un restaurante y genera sugerencias de qué platos preparar mañana.
 Considera:
@@ -137,31 +124,28 @@ Responde SOLO con un JSON array con este formato (sin texto adicional):
 
       const response = await this.callGroq(messages);
 
-      // Parsear la respuesta JSON
+
       try {
-        // Limpiar bloques de código markdown si el modelo los incluye (ej: ```json ... ```)
         let jsonString = response.replace(/```json\n?|\n?```/g, '').trim();
-        
-        // Eliminar cualquier texto antes del array JSON
+
         const arrayStart = jsonString.indexOf('[');
         const arrayEnd = jsonString.lastIndexOf(']');
-        
+
         if (arrayStart !== -1 && arrayEnd !== -1) {
           jsonString = jsonString.substring(arrayStart, arrayEnd + 1);
         }
 
         const suggestions = JSON.parse(jsonString);
-        
-        // Validar estructura de las sugerencias
+
         if (Array.isArray(suggestions)) {
-          return suggestions.filter(s => 
-            s.itemName && 
-            s.reason && 
+          return suggestions.filter(s =>
+            s.itemName &&
+            s.reason &&
             typeof s.confidence === 'number' &&
             s.historicalData
           );
         }
-        
+
         return [];
       } catch (parseError) {
         console.error('Error al parsear sugerencias:', parseError);
@@ -170,20 +154,16 @@ Responde SOLO con un JSON array con este formato (sin texto adicional):
       }
     } catch (error) {
       console.error('Error en generateMenuSuggestions:', error);
-      // No lanzar error, devolver array vacío
+
       return [];
     }
   }
 
-  /**
-   * Obtiene datos del historial de menú desde Supabase
-   */
   private async getMenuHistoryData(): Promise<MenuAnalysisData[]> {
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      // Primero intentar obtener datos de menu_history
       const { data: historyData, error: historyError } = await supabase
         .from('menu_history')
         .select('*')
@@ -196,8 +176,7 @@ Responde SOLO con un JSON array con este formato (sin texto adicional):
       }
 
       let processedData: MenuAnalysisData[] = [];
-      
-      // Procesar datos de menu_history si existen
+
       if (historyData && historyData.length > 0) {
         historyData.forEach((snapshot: any) => {
           const salesStats = snapshot.sales_stats || {};
@@ -220,10 +199,9 @@ Responde SOLO con un JSON array con este formato (sin texto adicional):
         });
       }
 
-      // Si no hay datos en menu_history, consultar directamente order_items
       if (processedData.length === 0) {
         console.log('📊 No hay datos en menu_history, consultando order_items directamente...');
-        
+
         const { data: orderItems, error: orderItemsError } = await supabase
           .from('order_items')
           .select('menu_item_name, price, quantity, created_at')
@@ -236,7 +214,7 @@ Responde SOLO con un JSON array con este formato (sin texto adicional):
         }
 
         if (orderItems && orderItems.length > 0) {
-          // Agrupar por plato y fecha
+
           const groupedData = new Map<string, Map<string, {
             quantity: number;
             revenue: number;
@@ -245,22 +223,21 @@ Responde SOLO con un JSON array con este formato (sin texto adicional):
           orderItems.forEach((item: any) => {
             const itemName = item.menu_item_name;
             const date = new Date(item.created_at).toISOString().split('T')[0];
-            
+
             if (!groupedData.has(itemName)) {
               groupedData.set(itemName, new Map());
             }
-            
+
             const itemDates = groupedData.get(itemName)!;
             if (!itemDates.has(date)) {
               itemDates.set(date, { quantity: 0, revenue: 0 });
             }
-            
+
             const dateData = itemDates.get(date)!;
             dateData.quantity += item.quantity;
             dateData.revenue += item.price * item.quantity;
           });
 
-          // Convertir a formato MenuAnalysisData
           groupedData.forEach((dates, itemName) => {
             dates.forEach((data, date) => {
               const dayOfWeek = new Date(date).toLocaleDateString('es-PE', { weekday: 'long' });
@@ -270,8 +247,8 @@ Responde SOLO con un JSON array con este formato (sin texto adicional):
                 dayOfWeek: dayOfWeek,
                 quantitySold: data.quantity,
                 revenue: data.revenue,
-                costPerUnit: 0, // No disponible desde order_items
-                profitMargin: 0.4, // Margen estimado del 40%
+                costPerUnit: 0,
+                profitMargin: 0.4,
               });
             });
           });
@@ -289,9 +266,6 @@ Responde SOLO con un JSON array con este formato (sin texto adicional):
     }
   }
 
-  /**
-   * Genera sugerencias rápidas para mostrar en el chat
-   */
   private async generateQuickSuggestions(): Promise<string[]> {
     return [
       '📊 ¿Qué platos han vendido mejor esta semana?',
@@ -302,9 +276,6 @@ Responde SOLO con un JSON array con este formato (sin texto adicional):
     ];
   }
 
-  /**
-   * Obtiene el prompt del sistema según el contexto
-   */
   private getSystemPrompt(context: 'help' | 'menu-analysis'): string {
     const basePrompt = `
 Eres Iris, asistente del sistema POS "Primera Parada".
@@ -416,27 +387,22 @@ Ejemplo corto:
 `;
   }
 
-  /**
-   * Realiza una llamada a la API de Groq (GRATIS y rápido)
-   */
   private async callGroq(messages: ChatMessage[]): Promise<string> {
     try {
       if (!this.groq) {
         return 'Lo siento, el chatbot no está configurado correctamente. Por favor, contacta al administrador.';
       }
 
-      // Convertir mensajes al formato compatible
       const groqMessages = messages.map((msg) => ({
         role: msg.role === 'assistant' ? 'assistant' : msg.role === 'system' ? 'system' : 'user',
         content: msg.content,
       }));
 
-      // Llamar a Groq (API compatible con OpenAI)
       const completion = await this.groq.chat.completions.create({
         model: this.model,
         messages: groqMessages as any,
         temperature: 0.7,
-        max_tokens: 400, // Reducido para respuestas más cortas
+        max_tokens: 400,
         top_p: 0.9,
       });
 
@@ -445,7 +411,6 @@ Ejemplo corto:
     } catch (error) {
       console.error('Error al llamar a Groq:', error);
 
-      // Respuesta de fallback
       if (error instanceof Error) {
         if (error.message.includes('API key') || error.message.includes('401')) {
           return 'Lo siento, hay un problema con la configuración de la API. Por favor, contacta al administrador.';
@@ -459,9 +424,6 @@ Ejemplo corto:
     }
   }
 
-  /**
-   * Detecta si una pregunta es sobre recomendaciones de menú
-   */
   private isMenuRecommendationQuery(message: string): boolean {
     const keywords = [
       'recomiend',
@@ -486,13 +448,9 @@ Ejemplo corto:
     return keywords.some(keyword => lowerMessage.includes(keyword));
   }
 
-  /**
-   * Calcula estadísticas resumidas del historial de menú
-   */
   private calculateMenuStats(menuData: MenuAnalysisData[]): any {
     if (menuData.length === 0) return {};
 
-    // Agrupar por plato
     const platosMap = new Map<string, {
       totalVentas: number;
       totalRevenue: number;
@@ -517,7 +475,6 @@ Ejemplo corto:
       plato.dias.add(item.dayOfWeek);
     });
 
-    // Convertir a array y calcular promedios
     const stats = Array.from(platosMap.entries()).map(([nombre, data]) => ({
       plato: nombre,
       ventasTotales: data.totalVentas,
@@ -528,7 +485,6 @@ Ejemplo corto:
       diasDisponible: data.dias.size,
     }));
 
-    // Ordenar por ventas totales
     stats.sort((a, b) => b.ventasTotales - a.ventasTotales);
 
     return {

@@ -1,11 +1,4 @@
-/**
- * Types para el módulo de Ventas
- * Representa la estructura de datos entre el backend y frontend
- */
 
-/**
- * Respuesta paginada genérica
- */
 export interface PaginatedResponse<T> {
   data: T[];
   pagination: {
@@ -39,9 +32,6 @@ export interface SaleWithOrder extends Sale {
   };
 }
 
-/**
- * DTOs (Data Transfer Objects) para requests
- */
 
 export interface CreateSaleRequest {
   orderId: string;

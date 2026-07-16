@@ -1,6 +1,4 @@
-/**
- * Barrel export para el módulo de Autenticación
- */
+
 
 export * from './auth.types';
 export * as AuthService from './auth.service';

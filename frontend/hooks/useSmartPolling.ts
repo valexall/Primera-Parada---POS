@@ -2,17 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 
 interface UseSmartPollingOptions<T> {
   fetcher: () => Promise<T>;
-  interval?: number; // intervalo base en ms (default: 30s)
-  maxInterval?: number; // intervalo máximo en ms (default: 60s)
-  backoffMultiplier?: number; // multiplicador de backoff (default: 1.5)
+  interval?: number;  
+  maxInterval?: number;  
+  backoffMultiplier?: number;  
   enabled?: boolean;
-  compareData?: (prev: T | null, current: T) => boolean; // función para comparar si hay cambios
+  compareData?: (prev: T | null, current: T) => boolean;  
 }
-
-/**
- * Hook de polling inteligente con backoff exponencial
- * Reduce frecuencia si no hay cambios, aumenta si hay actividad
- */
+ 
 export function useSmartPolling<T>(options: UseSmartPollingOptions<T>) {
   const {
     fetcher,
@@ -43,10 +39,9 @@ export function useSmartPolling<T>(options: UseSmartPollingOptions<T>) {
         if (hasChanges) {
           console.log('[useSmartPolling] Cambios detectados - reseteando intervalo');
           setData(result);
-          setCurrentInterval(interval); // Resetear a intervalo base
+          setCurrentInterval(interval);  
         } else {
-          console.log('[useSmartPolling] Sin cambios - aumentando intervalo');
-          // Aumentar intervalo (backoff) pero no exceder máximo
+          console.log('[useSmartPolling] Sin cambios - aumentando intervalo'); 
           setCurrentInterval(prev => Math.min(prev * backoffMultiplier, maxInterval));
         }
 
@@ -54,14 +49,12 @@ export function useSmartPolling<T>(options: UseSmartPollingOptions<T>) {
       } catch (error) {
         console.error('[useSmartPolling] Error:', error);
       }
-
-      // Programar siguiente poll
+ 
       if (isMountedRef.current) {
         timeoutRef.current = window.setTimeout(poll, currentInterval);
       }
     };
-
-    // Iniciar polling
+ 
     poll();
 
     return () => {
@@ -79,3 +72,4 @@ export function useSmartPolling<T>(options: UseSmartPollingOptions<T>) {
 
   return { data, isLoading };
 }
+

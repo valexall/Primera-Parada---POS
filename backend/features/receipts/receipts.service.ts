@@ -2,14 +2,7 @@ import { supabase } from '../../config/supabase';
 import { ValidationError, NotFoundError } from '../../middleware/errorHandler';
 import type { Receipt, ReceiptItem, ReceiptHistoryItem, ReceiptHistoryFilters, DbReceipt } from './receipts.types';
 
-/**
- * ReceiptsService - Lógica de negocio para Recibos
- * Todas las funciones retornan datos puros (sin objetos Response de Express)
- */
 
-/**
- * Crea y almacena un recibo en la base de datos
- */
 const createReceiptInDB = async (
   saleId: string,
   orderId: string,
@@ -20,15 +13,13 @@ const createReceiptInDB = async (
   paymentMethod: string,
   timestamp: string
 ): Promise<Receipt> => {
-  // Calcular subtotal, IGV (18%) y total
+
   const subtotal = totalAmount / 1.18;
   const tax = totalAmount - subtotal;
 
-  // Generar número de recibo único basado en la fecha y el ID
   const date = new Date(timestamp);
   const receiptNumber = `R-${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}-${saleId.substring(0, 8).toUpperCase()}`;
 
-  // Insertar el recibo en la base de datos
   const { data, error } = await supabase
     .from('receipts')
     .insert({
@@ -49,7 +40,7 @@ const createReceiptInDB = async (
   if (error) {
     throw new Error(`Error creating receipt: ${error.message}`);
   }
-  
+
   return {
     id: data.id,
     saleId: data.sale_id,
@@ -66,22 +57,17 @@ const createReceiptInDB = async (
   };
 };
 
-/**
- * Obtiene los datos completos del recibo para una venta específica
- */
 export const getReceipt = async (saleId: string): Promise<Receipt> => {
   if (!saleId) {
     throw new Error('ID de venta requerido');
   }
 
-  // Primero intentar obtener el recibo de la BD
   const { data: existingReceipt, error: receiptError } = await supabase
     .from('receipts')
     .select('*')
     .eq('sale_id', saleId)
     .single();
 
-  // Si ya existe el recibo en la BD, devolverlo
   if (existingReceipt && !receiptError) {
     const receipt: Receipt = {
       id: existingReceipt.id,
@@ -100,8 +86,6 @@ export const getReceipt = async (saleId: string): Promise<Receipt> => {
     return receipt;
   }
 
-  // Si no existe, crear uno nuevo
-  // Obtener información de la venta
   const { data: saleData, error: saleError } = await supabase
     .from('sales')
     .select(`
@@ -119,7 +103,6 @@ export const getReceipt = async (saleId: string): Promise<Receipt> => {
     throw new Error('Venta no encontrada');
   }
 
-  // Obtener información de la orden
   const { data: orderData, error: orderError } = await supabase
     .from('orders')
     .select(`
@@ -134,7 +117,6 @@ export const getReceipt = async (saleId: string): Promise<Receipt> => {
     throw new Error(`Error fetching order: ${orderError.message}`);
   }
 
-  // Obtener items de la orden
   const { data: itemsData, error: itemsError } = await supabase
     .from('order_items')
     .select('*')
@@ -152,7 +134,6 @@ export const getReceipt = async (saleId: string): Promise<Receipt> => {
     notes: item.notes || ''
   }));
 
-  // Crear y almacenar el recibo
   const receipt = await createReceiptInDB(
     saleData.id,
     saleData.order_id,
@@ -164,7 +145,6 @@ export const getReceipt = async (saleId: string): Promise<Receipt> => {
     saleData.created_at
   );
 
-  // Actualizar el estado de emisión de recibo si aún no estaba marcado
   if (!saleData.is_receipt_issued) {
     await supabase
       .from('sales')
@@ -175,9 +155,6 @@ export const getReceipt = async (saleId: string): Promise<Receipt> => {
   return receipt;
 };
 
-/**
- * Obtiene todos los recibos emitidos (historial)
- */
 export const getReceiptHistory = async (
   filters: ReceiptHistoryFilters
 ): Promise<ReceiptHistoryItem[]> => {
@@ -201,7 +178,6 @@ export const getReceiptHistory = async (
     throw new Error(`Error fetching receipt history: ${error.message}`);
   }
 
-  // Formatear los datos
   const receipts: ReceiptHistoryItem[] = (data || []).map((receipt: DbReceipt) => ({
     id: receipt.id,
     saleId: receipt.sale_id,

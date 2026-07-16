@@ -25,13 +25,11 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ context = 'help' }
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Auto-scroll al final cuando hay nuevos mensajes
+ 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  // Mensaje de bienvenida al abrir (Actualizado con el nombre Iris)
+ 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       const welcomeMessage: ChatMessage = {
@@ -48,10 +46,9 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ context = 'help' }
         loadSuggestions();
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [isOpen, context]);
-
-  // Solo mostrar el chatbot para administradores
+ 
   if (user?.role !== 'admin') {
     return null;
   }
@@ -272,4 +269,5 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ context = 'help' }
       </div>
     </>
   );
+
 };

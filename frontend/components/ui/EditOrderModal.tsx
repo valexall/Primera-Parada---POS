@@ -14,7 +14,7 @@ interface EditOrderModalProps {
 
 const EditOrderModal: React.FC<EditOrderModalProps> = ({ order, isOpen, onClose, onSave }) => {
   const [editedItems, setEditedItems] = useState<OrderItem[]>([]);
-  // ⚡ USAR CONTEXT EN LUGAR DE LOCAL STATE
+ 
   const { menuItems } = useMenu();
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -22,11 +22,10 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({ order, isOpen, onClose,
   useEffect(() => {
     if (isOpen) {
       setEditedItems([...order.items]);
-      // ❌ ELIMINADO: loadMenu();
+       
     }
   }, [isOpen, order]);
-
-  // ❌ ELIMINADO: const loadMenu = async () => { ... };
+ 
 
   const updateQuantity = (menuItemId: string, delta: number) => {
     setEditedItems(curr => 
@@ -60,7 +59,7 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({ order, isOpen, onClose,
         menuItemName: menuItem.name,
         price: menuItem.price,
         quantity: 1,
-        itemStatus: 'Pendiente' // Agregar estado por defecto para nuevos items
+        itemStatus: 'Pendiente'  
       }]);
       toast.success(`${menuItem.name} agregado`, { icon: '✅', duration: 2000 });
     }
@@ -271,3 +270,4 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({ order, isOpen, onClose,
 };
 
 export default EditOrderModal;
+

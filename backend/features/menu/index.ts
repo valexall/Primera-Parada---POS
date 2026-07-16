@@ -1,6 +1,3 @@
-/**
- * Barrel export para el módulo de Menú
- */
 
 export * from './menu.types';
 export * as MenuService from './menu.service';

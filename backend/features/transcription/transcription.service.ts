@@ -16,9 +16,6 @@ export class TranscriptionService {
     }
   }
 
-  /**
-   * Transcribe audio usando Groq Whisper
-   */
   async transcribeAudio(audioBuffer: Buffer, filename: string = 'audio.webm'): Promise<string> {
     if (!this.groq) {
       throw new Error('Groq API no está configurada');
@@ -27,15 +24,14 @@ export class TranscriptionService {
     let tempFilePath: string | null = null;
 
     try {
-      // Crear archivo temporal
+
       tempFilePath = join(tmpdir(), `audio-${Date.now()}-${filename}`);
       await writeFile(tempFilePath, audioBuffer);
 
-      // Transcribir con Whisper de Groq
       const transcription = await this.groq.audio.transcriptions.create({
         file: createReadStream(tempFilePath),
-        model: 'whisper-large-v3-turbo', // Modelo más rápido de Groq
-        language: 'es', // Español
+        model: 'whisper-large-v3-turbo',
+        language: 'es',
         response_format: 'json',
         temperature: 0.0,
       });
@@ -46,7 +42,7 @@ export class TranscriptionService {
     } catch (error: any) {
       throw new Error(`Error al transcribir audio: ${error.message}`);
     } finally {
-      // Limpiar archivo temporal
+
       if (tempFilePath) {
         try {
           await unlink(tempFilePath);

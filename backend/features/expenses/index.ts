@@ -1,7 +1,3 @@
-/**
- * Barrel export para el módulo de Gastos
- * Facilita las importaciones desde otros módulos
- */
 
 export * from './expenses.types';
 export * as ExpensesService from './expenses.service';

@@ -1,7 +1,4 @@
-/**
- * Barrel export para el módulo de Recibos
- * Facilita las importaciones desde otros módulos
- */
+
 
 export * from './receipts.types';
 export * as ReceiptsService from './receipts.service';

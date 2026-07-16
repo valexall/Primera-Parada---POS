@@ -14,21 +14,12 @@ import type {
   DayComparison
 } from './menu-history.types';
 
-/**
- * MenuHistoryService - Lógica de negocio para Historial de Menú
- * Todas las funciones retornan datos puros (sin objetos Response de Express)
- */
-
-/**
- * Genera o actualiza un snapshot del menú para una fecha específica
- */
 export const generateSnapshot = async (
   snapshotData: GenerateSnapshotRequest
 ): Promise<{ message: string; data: MenuSnapshot }> => {
   const { date, notes } = snapshotData;
-  const snapshotDate = date || new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const snapshotDate = date || new Date().toISOString().split('T')[0];
 
-  // 1. Get all menu items for the snapshot
   const { data: menuItems, error: menuError } = await supabase
     .from('menu_items')
     .select('*')
@@ -38,7 +29,6 @@ export const generateSnapshot = async (
     throw new Error(`Error fetching menu items: ${menuError.message}`);
   }
 
-  // 2. Get all orders for the specified date using timestamp field
   const startOfDay = new Date(`${snapshotDate}T00:00:00`).getTime();
   const endOfDay = new Date(`${snapshotDate}T23:59:59`).getTime();
 
@@ -52,9 +42,8 @@ export const generateSnapshot = async (
     throw new Error(`Error fetching orders: ${ordersError.message}`);
   }
 
-  // 3. Get all order items for these orders
   const orderIds = orders?.map(o => o.id) || [];
-  
+
   let orderItems: any[] = [];
   if (orderIds.length > 0) {
     const { data: items, error: itemsError } = await supabase
@@ -68,7 +57,6 @@ export const generateSnapshot = async (
     orderItems = items || [];
   }
 
-  // 4. Calculate sales statistics per menu item
   const salesStats: any = {};
   let totalItemsSold = 0;
 
@@ -92,30 +80,26 @@ export const generateSnapshot = async (
     }
   });
 
-  // 5. Calculate aggregated metrics from sales table
   let totalRevenue = 0;
-  
+
   if (orderIds.length > 0) {
     const { data: salesData, error: salesError } = await supabase
       .from('sales')
       .select('total_amount')
       .in('order_id', orderIds);
-    
+
     if (!salesError && salesData) {
       totalRevenue = salesData.reduce((sum, sale) => sum + parseFloat(sale.total_amount || 0), 0);
     }
   }
-  
+
   const totalOrders = orders?.length || 0;
 
-  // Count order types (match schema values)
   const dineInOrders = orders?.filter(o => o.order_type === 'Dine-In').length || 0;
   const takeawayOrders = orders?.filter(o => o.order_type === 'Takeaway').length || 0;
 
-  // Calculate average order value
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-  // Find peak hour (hour with most orders) - use timestamp field
   const hourCounts: { [key: number]: number } = {};
   orders?.forEach(order => {
     const hour = new Date(order.timestamp).getHours();
@@ -131,7 +115,6 @@ export const generateSnapshot = async (
     }
   });
 
-  // 6. Check if snapshot already exists for this date
   const { data: existing } = await supabase
     .from('menu_history')
     .select('id')
@@ -152,7 +135,6 @@ export const generateSnapshot = async (
     notes: notes || null
   };
 
-  // Update or insert
   if (existing) {
     const { data, error } = await supabase
       .from('menu_history')
@@ -179,9 +161,6 @@ export const generateSnapshot = async (
   }
 };
 
-/**
- * Obtiene todos los snapshots con paginación y filtros
- */
 export const getSnapshots = async (
   filters: SnapshotFilters
 ): Promise<PaginatedResponse<MenuSnapshot>> => {
@@ -195,7 +174,6 @@ export const getSnapshots = async (
     .select('*', { count: 'exact' })
     .order('snapshot_date', { ascending: false });
 
-  // Apply date filters if provided
   if (startDate) {
     query = query.gte('snapshot_date', startDate);
   }
@@ -203,7 +181,6 @@ export const getSnapshots = async (
     query = query.lte('snapshot_date', endDate);
   }
 
-  // Apply pagination
   query = query.range(offset, offset + limitNum - 1);
 
   const { data, error, count } = await query;
@@ -223,9 +200,6 @@ export const getSnapshots = async (
   };
 };
 
-/**
- * Obtiene un snapshot específico por fecha
- */
 export const getSnapshotByDate = async (date: string): Promise<MenuSnapshot> => {
   const { data, error } = await supabase
     .from('menu_history')
@@ -243,9 +217,6 @@ export const getSnapshotByDate = async (date: string): Promise<MenuSnapshot> => 
   return data;
 };
 
-/**
- * Elimina un snapshot
- */
 export const deleteSnapshot = async (id: string): Promise<void> => {
   const { error } = await supabase
     .from('menu_history')
@@ -257,9 +228,6 @@ export const deleteSnapshot = async (id: string): Promise<void> => {
   }
 };
 
-/**
- * Obtiene los items más vendidos en un rango de fechas
- */
 export const getTopSellingItems = async (
   filters: TopSellingFilters
 ): Promise<TopSellingItem[]> => {
@@ -283,7 +251,6 @@ export const getTopSellingItems = async (
     throw new Error(`Error fetching top selling items: ${error.message}`);
   }
 
-  // Aggregate sales across all snapshots
   const aggregated: any = {};
 
   data?.forEach(snapshot => {
@@ -304,7 +271,6 @@ export const getTopSellingItems = async (
     });
   });
 
-  // Sort by total quantity sold and limit
   const topItems = Object.values(aggregated)
     .sort((a: any, b: any) => b.total_quantity - a.total_quantity)
     .slice(0, limitNum);
@@ -312,9 +278,6 @@ export const getTopSellingItems = async (
   return topItems as TopSellingItem[];
 };
 
-/**
- * Obtiene tendencias de ventas a lo largo del tiempo
- */
 export const getRevenueTrends = async (
   filters: RevenueTrendFilters
 ): Promise<RevenueTrend[]> => {
@@ -341,9 +304,6 @@ export const getRevenueTrends = async (
   return data || [];
 };
 
-/**
- * Obtiene el rendimiento por categorías de menú
- */
 export const getCategoryPerformance = async (
   filters: TopSellingFilters
 ): Promise<CategoryPerformance[]> => {
@@ -366,7 +326,6 @@ export const getCategoryPerformance = async (
     throw new Error(`Error fetching category performance: ${error.message}`);
   }
 
-  // Aggregate by category
   const categoryMap: any = {};
   let totalRevenue = 0;
 
@@ -379,7 +338,7 @@ export const getCategoryPerformance = async (
       const menuItem = menuItems.find((item: any) => item.id === stat.menu_item_id);
       if (menuItem) {
         const category = menuItem.category || 'Sin categoría';
-        
+
         if (!categoryMap[category]) {
           categoryMap[category] = {
             category,
@@ -398,7 +357,6 @@ export const getCategoryPerformance = async (
     });
   });
 
-  // Calculate averages and percentages
   const categories: CategoryPerformance[] = Object.values(categoryMap).map((cat: any) => ({
     category: cat.category,
     total_quantity: cat.total_quantity,
@@ -411,16 +369,13 @@ export const getCategoryPerformance = async (
   return categories.sort((a, b) => b.total_revenue - a.total_revenue);
 };
 
-/**
- * Obtiene patrones de ventas por hora
- */
 export const getHourlySalesPattern = async (
   filters: TopSellingFilters
 ): Promise<HourlySalesPattern[]> => {
   const { startDate, endDate } = filters;
 
   try {
-    // Get orders within date range using timestamp field
+
     let query = supabase
       .from('orders')
       .select('id, timestamp')
@@ -439,7 +394,6 @@ export const getHourlySalesPattern = async (
 
     if (ordersError) {
       console.error('Error fetching orders for hourly pattern:', ordersError);
-      // Return empty pattern instead of throwing
       return Array.from({ length: 24 }, (_, i) => ({
         hour: i,
         orders_count: 0,
@@ -447,31 +401,27 @@ export const getHourlySalesPattern = async (
         avg_order_value: 0
       }));
     }
-
-    // Get sales for these orders
     const orderIds = orders?.map(o => o.id) || [];
     let salesData: any[] = [];
-    
+
     if (orderIds.length > 0) {
       const { data: sales, error: salesError } = await supabase
         .from('sales')
         .select('order_id, total_amount')
         .in('order_id', orderIds);
-      
+
       if (!salesError && sales) {
         salesData = sales;
       }
     }
 
-    // Create a map of order_id to sales data
     const salesMap = new Map();
     salesData.forEach(sale => {
       salesMap.set(sale.order_id, parseFloat(sale.total_amount || 0));
     });
 
-    // Group by hour
     const hourlyData: any = {};
-    
+
     for (let i = 0; i < 24; i++) {
       hourlyData[i] = {
         hour: i,
@@ -487,7 +437,6 @@ export const getHourlySalesPattern = async (
       hourlyData[hour].revenue += saleAmount;
     });
 
-    // Calculate averages
     const pattern: HourlySalesPattern[] = Object.values(hourlyData).map((data: any) => ({
       hour: data.hour,
       orders_count: data.orders_count,
@@ -498,7 +447,6 @@ export const getHourlySalesPattern = async (
     return pattern;
   } catch (error) {
     console.error('Error in getHourlySalesPattern:', error);
-    // Return empty pattern on any error
     return Array.from({ length: 24 }, (_, i) => ({
       hour: i,
       orders_count: 0,
@@ -508,14 +456,11 @@ export const getHourlySalesPattern = async (
   }
 };
 
-/**
- * Compara dos snapshots (día actual vs día anterior)
- */
 export const compareSnapshots = async (
   currentDate: string,
   previousDate?: string
 ): Promise<DayComparison | null> => {
-  // If no previous date provided, calculate it (1 day before)
+
   let prevDate = previousDate;
   if (!prevDate) {
     const current = new Date(currentDate);
@@ -523,7 +468,6 @@ export const compareSnapshots = async (
     prevDate = current.toISOString().split('T')[0];
   }
 
-  // Get both snapshots
   const [currentSnapshot, previousSnapshot] = await Promise.all([
     getSnapshotByDate(currentDate).catch(() => null),
     getSnapshotByDate(prevDate).catch(() => null)
@@ -533,10 +477,9 @@ export const compareSnapshots = async (
     return null;
   }
 
-  // Calculate changes
   const revenueChange = currentSnapshot.total_revenue - previousSnapshot.total_revenue;
-  const revenueChangePercent = previousSnapshot.total_revenue > 0 
-    ? (revenueChange / previousSnapshot.total_revenue) * 100 
+  const revenueChangePercent = previousSnapshot.total_revenue > 0
+    ? (revenueChange / previousSnapshot.total_revenue) * 100
     : 0;
 
   const ordersChange = currentSnapshot.total_orders - previousSnapshot.total_orders;

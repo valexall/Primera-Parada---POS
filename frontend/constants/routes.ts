@@ -1,5 +1,4 @@
-// Rutas de la aplicación
-
+ 
 export const ROUTES = {
   HOME: '/',
   MENU: '/',
@@ -15,4 +14,5 @@ export const ROUTES = {
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;
+
 

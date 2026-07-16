@@ -1,7 +1,4 @@
-/**
- * Types para el módulo de Gastos
- * Representa la estructura de datos entre el backend y frontend
- */
+
 
 export interface Expense {
   id: string;
@@ -11,9 +8,7 @@ export interface Expense {
   created_at: string;
 }
 
-/**
- * DTOs (Data Transfer Objects) para requests
- */
+
 
 export interface CreateExpenseRequest {
   description: string;
