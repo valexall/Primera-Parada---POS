@@ -21,11 +21,24 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('admin', 'waiter')),
   is_active BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  -- RF01: Recuperación de contraseña por pregunta de seguridad
+  security_question TEXT,       -- Pregunta elegida por el usuario
+  security_answer   TEXT        -- Respuesta hasheada con bcrypt (nunca en texto plano)
 );
 
 COMMENT ON TABLE users IS 'Usuarios del sistema (administradores y mozos)';
 COMMENT ON COLUMN users.is_active IS 'Indica si el usuario está activo. Usuarios inactivos no pueden hacer login.';
+COMMENT ON COLUMN users.security_question IS 'Pregunta de seguridad elegida por el usuario para recuperación de contraseña.';
+COMMENT ON COLUMN users.security_answer IS 'Respuesta a la pregunta de seguridad, almacenada como hash bcrypt.';
+
+-- =============================================
+-- MIGRACIÓN RF01: ejecutar en Supabase SQL Editor si la tabla ya existe
+-- ALTER TABLE users
+--   ADD COLUMN IF NOT EXISTS security_question TEXT,
+--   ADD COLUMN IF NOT EXISTS security_answer TEXT;
+-- =============================================
+
 
 -- Tabla de elementos del menú
 CREATE TABLE IF NOT EXISTS menu_items (

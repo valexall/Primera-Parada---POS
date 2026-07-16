@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { XIcon, LockIcon, Eye, EyeOff, ShieldCheckIcon } from 'lucide-react';
+import { XIcon, LockIcon, Eye, EyeOff, ShieldCheckIcon, ShieldIcon } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import { Loader } from './Loader';
@@ -22,12 +22,23 @@ const getStrength = (password: string): { level: number; label: string; color: s
   return { level: 3, label: 'Fuerte', color: 'bg-emerald-500' };
 };
 
+const SECURITY_QUESTIONS = [
+  '¿Cuál es el nombre de tu primera mascota?',
+  '¿En qué ciudad naciste?',
+  '¿Cuál es el nombre de tu madre?',
+  '¿Cuál fue tu primer trabajo?',
+  '¿Cuál es tu comida favorita?',
+];
+
 const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ onClose }) => {
+  const [activeTab, setActiveTab] = useState<'password' | 'question'>('password');
   const [form, setForm] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
+  const [sqForm, setSqForm] = useState({ question: SECURITY_QUESTIONS[0], answer: '', confirmAnswer: '' });
+  const [sqLoading, setSqLoading] = useState(false);
   const [show, setShow] = useState({ current: false, newPw: false, confirm: false });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -83,26 +94,55 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ onClose }) =>
       {/* Modal */}
       <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md border border-slate-100 dark:border-slate-700">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/40 rounded-xl flex items-center justify-center">
-              <ShieldCheckIcon size={20} className="text-amber-600 dark:text-amber-400" />
+        <div className="p-6 border-b border-slate-100 dark:border-slate-700">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/40 rounded-xl flex items-center justify-center">
+                <ShieldCheckIcon size={20} className="text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">Seguridad de cuenta</h2>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Gestiona tu contraseña y pregunta de seguridad</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">Cambiar Contraseña</h2>
-              <p className="text-xs text-slate-400 dark:text-slate-500">Actualiza tu clave de acceso</p>
-            </div>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            >
+              <XIcon size={20} />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-          >
-            <XIcon size={20} />
-          </button>
+          {/* Tabs */}
+          <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => setActiveTab('password')}
+              className={`flex-1 py-2 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${
+                activeTab === 'password'
+                  ? 'bg-amber-500 text-white'
+                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
+            >
+              <LockIcon size={13} /> Contraseña
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('question')}
+              className={`flex-1 py-2 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${
+                activeTab === 'question'
+                  ? 'bg-amber-500 text-white'
+                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
+            >
+              <ShieldIcon size={13} /> Pregunta secreta
+            </button>
+          </div>
         </div>
 
-        {/* Form */}
+        {/* ======= PESTANA: CONTRASENA ======= */}
+        {activeTab === 'password' && (
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+
           {/* Contraseña actual */}
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase ml-1">
@@ -235,6 +275,94 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ onClose }) =>
             </button>
           </div>
         </form>
+        )}
+
+        {/* ======= PESTANA: PREGUNTA DE SEGURIDAD ======= */}
+        {activeTab === 'question' && (
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            if (sqForm.answer !== sqForm.confirmAnswer) { toast.error('Las respuestas no coinciden'); return; }
+            if (sqForm.answer.trim().length < 2) { toast.error('La respuesta debe tener al menos 2 caracteres'); return; }
+            setSqLoading(true);
+            try {
+              await api.put('/auth/me/security-question', { question: sqForm.question, answer: sqForm.answer });
+              toast.success('Pregunta de seguridad configurada exitosamente');
+              setSqForm({ question: SECURITY_QUESTIONS[0], answer: '', confirmAnswer: '' });
+            } catch (err: unknown) {
+              const error = err as { response?: { data?: { error?: string } } };
+              toast.error(error.response?.data?.error || 'Error al configurar la pregunta');
+            } finally {
+              setSqLoading(false);
+            }
+          }} className="space-y-4">
+
+            {/* Select pregunta */}
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase ml-1">Pregunta de seguridad</label>
+              <select
+                value={sqForm.question}
+                onChange={(e) => setSqForm({ ...sqForm, question: e.target.value })}
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all font-medium text-slate-700 dark:text-slate-200 text-sm"
+              >
+                {SECURITY_QUESTIONS.map((q) => (<option key={q} value={q}>{q}</option>))}
+              </select>
+            </div>
+
+            {/* Respuesta */}
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase ml-1">Tu respuesta</label>
+              <div className="relative group">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 group-focus-within:text-amber-500 transition-colors"><ShieldIcon size={16} /></span>
+                <input
+                  type="text"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white dark:focus:bg-slate-800 transition-all font-medium text-slate-700 dark:text-slate-200 text-sm"
+                  placeholder="Escribe tu respuesta..."
+                  value={sqForm.answer}
+                  onChange={(e) => setSqForm({ ...sqForm, answer: e.target.value })}
+                  required
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+
+            {/* Confirmar respuesta */}
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase ml-1">Confirmar respuesta</label>
+              <div className="relative group">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 group-focus-within:text-amber-500 transition-colors"><ShieldIcon size={16} /></span>
+                <input
+                  type="text"
+                  className={`w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white dark:focus:bg-slate-800 transition-all font-medium text-slate-700 dark:text-slate-200 text-sm ${
+                    sqForm.confirmAnswer && sqForm.answer !== sqForm.confirmAnswer
+                      ? 'border-red-400 dark:border-red-500'
+                      : sqForm.confirmAnswer && sqForm.answer === sqForm.confirmAnswer
+                      ? 'border-emerald-400 dark:border-emerald-500'
+                      : 'border-slate-200 dark:border-slate-600'
+                  }`}
+                  placeholder="Repite tu respuesta..."
+                  value={sqForm.confirmAnswer}
+                  onChange={(e) => setSqForm({ ...sqForm, confirmAnswer: e.target.value })}
+                  required
+                  autoComplete="off"
+                />
+              </div>
+              {sqForm.confirmAnswer && sqForm.answer !== sqForm.confirmAnswer && (
+                <p className="text-xs text-red-500 font-medium ml-1">Las respuestas no coinciden</p>
+              )}
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3">
+              <p className="text-xs text-blue-700 dark:text-blue-300">La respuesta no distingue entre mayusculas y minusculas. Guardala en un lugar seguro.</p>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button type="button" onClick={onClose} className="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-semibold text-sm">Cancelar</button>
+              <button type="submit" disabled={sqLoading || (!!sqForm.confirmAnswer && sqForm.answer !== sqForm.confirmAnswer)} className="flex-1 py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition-all active:scale-95 shadow-lg shadow-amber-200 dark:shadow-amber-900/30 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                {sqLoading ? <Loader size={18} color="text-white" /> : 'Guardar pregunta'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

@@ -3,9 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   MenuIcon, ClipboardIcon, ChefHatIcon, DollarSignIcon, 
   PieChartIcon, PackageIcon, LogOutIcon, UsersIcon, LayoutGridIcon, XIcon,
-  MoonIcon, SunIcon, HistoryIcon, BarChart3Icon, KeyIcon
+  MoonIcon, SunIcon, HistoryIcon, BarChart3Icon
 } from 'lucide-react';
-import ChangePasswordModal from '../ui/ChangePasswordModal';
 import { ROUTES } from '../../constants/routes';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -21,7 +20,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { theme, toggleTheme } = useTheme();
    
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const getLinkClass = (path: string) => {
     const active = location.pathname === path;
@@ -120,13 +118,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               {theme === 'dark' ? <SunIcon size={18} /> : <MoonIcon size={18} />}
               <span>{theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}</span>
             </button>
-            <button
-              onClick={() => setShowChangePassword(true)}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm font-medium"
-            >
-              <KeyIcon size={18} />
-              <span>Cambiar Contraseña</span>
-            </button>
             <button 
               onClick={handleLogout} 
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-sm font-medium"
@@ -181,12 +172,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               >
                 {theme === 'dark' ? <SunIcon size={18} /> : <MoonIcon size={18} />}
                 {theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
-              </button>
-              <button
-                onClick={() => { setShowChangePassword(true); setIsMobileMenuOpen(false); }}
-                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 font-bold text-sm"
-              >
-                <KeyIcon size={18} /> Cambiar Contraseña
               </button>
               <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 p-3 rounded-xl text-red-500 bg-red-50 dark:bg-red-900/20 font-bold text-sm">
                 <LogOutIcon size={18} /> Cerrar Sesión
@@ -248,11 +233,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
            )}
         </nav>
       </main>
-
-      {/* Modal de cambio de contraseña */}
-      {showChangePassword && (
-        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
-      )}
     </div>
   );
 };

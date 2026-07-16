@@ -9,7 +9,11 @@ import {
   updateUserPassword,
   changeOwnPassword,
   toggleUserStatus,
-  deleteUser
+  deleteUser,
+  forgotPassword,
+  setSecurityQuestion,
+  getSecurityQuestion,
+  resetPasswordWithQuestion
 } from './auth.controller';
 import { verifyToken, verifyAdmin } from '../../middleware/authMiddleware';
 
@@ -56,6 +60,17 @@ router.post('/login', loginLimiter, login);
 
 
 router.post('/register', registerLimiter, register);
+
+// Recuperación de contraseña desde la página de login (pública)
+router.post('/forgot-password', changePasswordLimiter, forgotPassword);
+
+// --- RF01: Pregunta de seguridad ---
+// Pública: obtener la pregunta de un email (no expone respuesta)
+router.get('/security-question', changePasswordLimiter, getSecurityQuestion);
+// Pública: restablecer contraseña respondiendo la pregunta
+router.post('/reset-with-question', changePasswordLimiter, resetPasswordWithQuestion);
+// Protegida: configurar/actualizar la propia pregunta de seguridad
+router.put('/me/security-question', verifyToken, setSecurityQuestion);
 
 // Cambio de contraseña propio (cualquier usuario autenticado)
 router.put('/me/password', verifyToken, changePasswordLimiter, changeOwnPassword);

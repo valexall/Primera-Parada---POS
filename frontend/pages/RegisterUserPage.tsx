@@ -1,9 +1,17 @@
 import React, { useState } from 'react';
-import { UserPlusIcon, SaveIcon, UserIcon, MailIcon, LockIcon, Eye, EyeOff } from 'lucide-react';
+import { UserPlusIcon, SaveIcon, UserIcon, MailIcon, LockIcon, Eye, EyeOff, ShieldIcon } from 'lucide-react';
 import api from '../services/api';
 
+const SECURITY_QUESTIONS = [
+  '¿Cuál es el nombre de tu primera mascota?',
+  '¿En qué ciudad naciste?',
+  '¿Cuál es el nombre de tu madre?',
+  '¿Cuál fue tu primer trabajo?',
+  '¿Cuál es tu comida favorita?',
+];
+
 const RegisterUserPage: React.FC = () => {
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'moza' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'moza', securityQuestion: SECURITY_QUESTIONS[0], securityAnswer: '' });
   const [status, setStatus] = useState<{ type: 'success' | 'error' | ''; msg: string }>({ type: '', msg: '' });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -13,7 +21,7 @@ const RegisterUserPage: React.FC = () => {
     try {
       await api.post('/auth/register', formData);
       setStatus({ type: 'success', msg: `Usuario ${formData.name} creado correctamente.` });
-      setFormData({ name: '', email: '', password: '', role: 'moza' });
+      setFormData({ name: '', email: '', password: '', role: 'moza', securityQuestion: SECURITY_QUESTIONS[0], securityAnswer: '' });
     } catch (error: any) {
       setStatus({ type: 'error', msg: error.response?.data?.error || 'Error al registrar.' });
     }
@@ -76,6 +84,21 @@ const RegisterUserPage: React.FC = () => {
               <option value="moza">Mozo(a)</option>
               <option value="admin">Administrador(a)</option>
             </select>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase ml-1 block mb-1">Pregunta de Seguridad</label>
+            <select className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-medium text-slate-800 dark:text-slate-200" value={formData.securityQuestion} onChange={e => setFormData({ ...formData, securityQuestion: e.target.value })}>
+              {SECURITY_QUESTIONS.map(q => <option key={q} value={q}>{q}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase ml-1 block mb-1">Respuesta de Seguridad</label>
+            <div className="relative">
+              <ShieldIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
+              <input type="text" required className="w-full pl-11 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-medium text-slate-800 dark:text-slate-200" placeholder="Respuesta secreta" value={formData.securityAnswer} onChange={e => setFormData({ ...formData, securityAnswer: e.target.value })} />
+            </div>
           </div>
 
           <button type="submit" className="w-full py-3.5 bg-slate-900 dark:bg-amber-600 text-white rounded-xl font-bold shadow-lg shadow-slate-200 dark:shadow-amber-900/50 hover:bg-slate-800 dark:hover:bg-amber-700 transition-transform active:scale-95 flex items-center justify-center gap-2 mt-4">

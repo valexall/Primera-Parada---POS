@@ -1,7 +1,7 @@
 import { supabase } from '../../config/supabase';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import type { LoginRequest, RegisterRequest, LoginResponse, RegisterResponse, DbUser, JWTPayload, ChangePasswordRequest } from './auth.types';
+import type { LoginRequest, RegisterRequest, LoginResponse, RegisterResponse, DbUser, JWTPayload, ChangePasswordRequest, SetSecurityQuestionRequest, ResetPasswordWithQuestionRequest } from './auth.types';
 import {
   ValidationError,
   UnauthorizedError,
@@ -53,10 +53,10 @@ export const loginUser = async (credentials: LoginRequest): Promise<LoginRespons
 
 
 export const registerUser = async (userData: RegisterRequest): Promise<RegisterResponse> => {
-  const { email, password, name, role } = userData;
+  const { email, password, name, role, securityQuestion, securityAnswer } = userData;
 
   if (!email || !password || !name || !role) {
-    throw new ValidationError('Todos los campos son requeridos');
+    throw new ValidationError('Todos los campos obligatorios son requeridos');
   }
 
   if (password.length < 6) {
@@ -69,6 +69,11 @@ export const registerUser = async (userData: RegisterRequest): Promise<RegisterR
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
+  
+  let hashedAnswer = null;
+  if (securityAnswer) {
+    hashedAnswer = await bcrypt.hash(securityAnswer.trim().toLowerCase(), 10);
+  }
 
   const { data, error } = await supabase
     .from('users')
@@ -76,7 +81,9 @@ export const registerUser = async (userData: RegisterRequest): Promise<RegisterR
       email,
       password: hashedPassword,
       name,
-      role
+      role,
+      security_question: securityQuestion || null,
+      security_answer: hashedAnswer
     }])
     .select()
     .single<DbUser>();
@@ -278,4 +285,129 @@ export const deleteUser = async (userId: string) => {
   }
 
   return { message: 'Usuario eliminado exitosamente' };
+};
+
+/**
+ * Verifica si un email está registrado en el sistema.
+ * Usado en el flujo de recuperación de contraseña desde la página de login.
+ * Por seguridad, siempre devuelve el mismo mensaje genérico al usuario final.
+ */
+export const checkEmailForRecovery = async (email: string): Promise<{ exists: boolean }> => {
+  if (!email) {
+    throw new ValidationError('El correo electrónico es requerido');
+  }
+
+  const { data: user } = await supabase
+    .from('users')
+    .select('id, is_active')
+    .eq('email', email)
+    .maybeSingle();
+
+  return { exists: !!(user && user.is_active) };
+};
+
+// ============================================================
+// RF01 — PREGUNTA DE SEGURIDAD
+// ============================================================
+
+/**
+ * Configura o actualiza la pregunta de seguridad del usuario autenticado.
+ * La respuesta se guarda hasheada con bcrypt.
+ */
+export const setSecurityQuestion = async (userId: string, data: SetSecurityQuestionRequest) => {
+  const { question, answer } = data;
+
+  if (!question || !answer) {
+    throw new ValidationError('La pregunta y la respuesta son requeridas');
+  }
+  if (answer.trim().length < 2) {
+    throw new ValidationError('La respuesta debe tener al menos 2 caracteres');
+  }
+
+  const hashedAnswer = await bcrypt.hash(answer.trim().toLowerCase(), 10);
+
+  const { error } = await supabase
+    .from('users')
+    .update({ security_question: question, security_answer: hashedAnswer })
+    .eq('id', userId);
+
+  if (error) {
+    throw new Error(`Error configurando pregunta de seguridad: ${error.message}`);
+  }
+
+  return { message: 'Pregunta de seguridad configurada exitosamente' };
+};
+
+/**
+ * Devuelve SOLO la pregunta de seguridad de un usuario dado su email.
+ * No expone la respuesta ni datos sensibles.
+ */
+export const getSecurityQuestion = async (email: string): Promise<{ question: string }> => {
+  if (!email) {
+    throw new ValidationError('El correo electrónico es requerido');
+  }
+
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('security_question, is_active')
+    .eq('email', email)
+    .maybeSingle<{ security_question: string | null; is_active: boolean }>();
+
+  if (error || !user || !user.is_active) {
+    throw new UnauthorizedError('No se encontró una cuenta activa con ese correo');
+  }
+
+  if (!user.security_question) {
+    throw new ValidationError('Este usuario no tiene configurada una pregunta de seguridad. Contacta al administrador.');
+  }
+
+  return { question: user.security_question };
+};
+
+/**
+ * Verifica la respuesta secreta y, si es correcta, actualiza la contraseña.
+ * La comparación se hace con bcrypt para proteger la respuesta almacenada.
+ */
+export const resetPasswordWithQuestion = async (data: ResetPasswordWithQuestionRequest) => {
+  const { email, answer, newPassword } = data;
+
+  if (!email || !answer || !newPassword) {
+    throw new ValidationError('Todos los campos son requeridos');
+  }
+  if (newPassword.length < 6) {
+    throw new ValidationError('La nueva contraseña debe tener al menos 6 caracteres');
+  }
+
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('id, security_answer, is_active')
+    .eq('email', email)
+    .maybeSingle<{ id: string; security_answer: string | null; is_active: boolean }>();
+
+  if (error || !user || !user.is_active) {
+    throw new UnauthorizedError('No se encontró una cuenta activa con ese correo');
+  }
+
+  if (!user.security_answer) {
+    throw new ValidationError('Este usuario no tiene configurada una pregunta de seguridad');
+  }
+
+  // Comparar respuesta (normalizar a minúsculas y sin espacios extra)
+  const isAnswerValid = await bcrypt.compare(answer.trim().toLowerCase(), user.security_answer);
+  if (!isAnswerValid) {
+    throw new UnauthorizedError('La respuesta a la pregunta de seguridad es incorrecta');
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  const { error: updateError } = await supabase
+    .from('users')
+    .update({ password: hashedPassword })
+    .eq('id', user.id);
+
+  if (updateError) {
+    throw new Error(`Error restableciendo contraseña: ${updateError.message}`);
+  }
+
+  return { message: 'Contraseña restablecida exitosamente' };
 };

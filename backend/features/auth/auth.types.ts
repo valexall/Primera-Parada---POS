@@ -16,6 +16,8 @@ export interface RegisterRequest {
   password: string;
   name: string;
   role: 'admin' | 'moza';
+  securityQuestion?: string;
+  securityAnswer?: string;
 }
 
 export interface LoginResponse {
@@ -46,5 +48,16 @@ export interface JWTPayload {
 
 export interface ChangePasswordRequest {
   currentPassword: string;
+  newPassword: string;
+}
+
+export interface SetSecurityQuestionRequest {
+  question: string;
+  answer: string;
+}
+
+export interface ResetPasswordWithQuestionRequest {
+  email: string;
+  answer: string;
   newPassword: string;
 }
