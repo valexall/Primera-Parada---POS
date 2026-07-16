@@ -43,3 +43,8 @@ export interface JWTPayload {
   role: string;
   name: string;
 }
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}

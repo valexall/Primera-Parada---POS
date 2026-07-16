@@ -7,6 +7,7 @@ import {
   getUserById,
   updateUser,
   updateUserPassword,
+  changeOwnPassword,
   toggleUserStatus,
   deleteUser
 } from './auth.controller';
@@ -17,7 +18,7 @@ const router = express.Router();
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: process.env.NODE_ENV === 'production' ? 5 : 100,
   message: {
     error: 'Demasiados intentos de login',
     message: 'Por seguridad, tu IP ha sido bloqueada temporalmente. Intenta en 15 minutos.'
@@ -38,11 +39,26 @@ const registerLimiter = rateLimit({
   legacyHeaders: false
 });
 
+// Rate limiter para cambio de contraseña propio (más estricto)
+const changePasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  message: {
+    error: 'Demasiados intentos de cambio de contraseña',
+    message: 'Por seguridad, espera 15 minutos antes de intentarlo de nuevo.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 
 router.post('/login', loginLimiter, login);
 
 
 router.post('/register', registerLimiter, register);
+
+// Cambio de contraseña propio (cualquier usuario autenticado)
+router.put('/me/password', verifyToken, changePasswordLimiter, changeOwnPassword);
 
 
 router.get('/users', verifyToken, verifyAdmin, getAllUsers);

@@ -7,7 +7,9 @@ import {
   XCircleIcon, 
   KeyIcon,
   SaveIcon,
-  XIcon
+  XIcon,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -27,7 +29,7 @@ const UserManagementPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editForm, setEditForm] = useState({ name: '', email: '', role: 'moza' as 'admin' | 'moza' });
-  const [passwordForm, setPasswordForm] = useState({ userId: '', password: '', showModal: false });
+  const [passwordForm, setPasswordForm] = useState({ userId: '', password: '', confirmPassword: '', showModal: false, showPw: false, showConfirm: false });
 
   useEffect(() => {
     loadUsers();
@@ -91,16 +93,20 @@ const UserManagementPage: React.FC = () => {
   };
 
   const handleOpenPasswordModal = (userId: string) => {
-    setPasswordForm({ userId, password: '', showModal: true });
+    setPasswordForm({ userId, password: '', confirmPassword: '', showModal: true, showPw: false, showConfirm: false });
   };
 
   const handleClosePasswordModal = () => {
-    setPasswordForm({ userId: '', password: '', showModal: false });
+    setPasswordForm({ userId: '', password: '', confirmPassword: '', showModal: false, showPw: false, showConfirm: false });
   };
 
   const handleSavePassword = async () => {
     if (!passwordForm.password || passwordForm.password.length < 6) {
       toast.error('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    if (passwordForm.password !== passwordForm.confirmPassword) {
+      toast.error('Las contraseñas no coinciden');
       return;
     }
 
@@ -109,7 +115,7 @@ const UserManagementPage: React.FC = () => {
       toast.success('Contraseña actualizada correctamente');
       handleClosePasswordModal();
     } catch (error: any) {
-      toast.error('Error al actualizar contraseña');
+      toast.error(error.response?.data?.error || 'Error al actualizar contraseña');
     }
   };
 
@@ -296,7 +302,7 @@ const UserManagementPage: React.FC = () => {
         )}
       </div>
 
-      {/* Modal de cambio de contraseña */}
+      {/* Modal de cambio de contraseña (admin) */}
       {passwordForm.showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-700">
@@ -304,26 +310,74 @@ const UserManagementPage: React.FC = () => {
               <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg flex items-center justify-center">
                 <KeyIcon size={20} />
               </div>
-              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">Cambiar Contraseña</h3>
+              <div>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">Restablecer Contraseña</h3>
+                <p className="text-xs text-slate-400 dark:text-slate-500">El usuario deberá usar esta nueva contraseña</p>
+              </div>
             </div>
 
-            <div className="mb-6">
-              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">
-                Nueva Contraseña
-              </label>
-              <input
-                type="password"
-                value={passwordForm.password}
-                onChange={(e) => setPasswordForm({ ...passwordForm, password: e.target.value })}
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"
-                placeholder="Mínimo 6 caracteres"
-              />
+            <div className="space-y-4 mb-6">
+              {/* Nueva contraseña */}
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
+                  Nueva Contraseña
+                </label>
+                <div className="relative">
+                  <input
+                    type={passwordForm.showPw ? 'text' : 'password'}
+                    value={passwordForm.password}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, password: e.target.value })}
+                    className="w-full pl-4 pr-11 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-sm font-medium text-slate-700 dark:text-slate-200"
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPasswordForm(p => ({ ...p, showPw: !p.showPw }))}
+                    className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-amber-500 transition-colors"
+                  >
+                    {passwordForm.showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirmar contraseña */}
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
+                  Confirmar Contraseña
+                </label>
+                <div className="relative">
+                  <input
+                    type={passwordForm.showConfirm ? 'text' : 'password'}
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                    className={`w-full pl-4 pr-11 py-3 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-sm font-medium text-slate-700 dark:text-slate-200 ${
+                      passwordForm.confirmPassword && passwordForm.password !== passwordForm.confirmPassword
+                        ? 'border-red-400 dark:border-red-500'
+                        : passwordForm.confirmPassword && passwordForm.password === passwordForm.confirmPassword
+                        ? 'border-emerald-400 dark:border-emerald-500'
+                        : 'border-slate-200 dark:border-slate-700'
+                    }`}
+                    placeholder="Repite la contraseña"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPasswordForm(p => ({ ...p, showConfirm: !p.showConfirm }))}
+                    className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-amber-500 transition-colors"
+                  >
+                    {passwordForm.showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {passwordForm.confirmPassword && passwordForm.password !== passwordForm.confirmPassword && (
+                  <p className="text-xs text-red-500 font-medium mt-1">Las contraseñas no coinciden</p>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-3">
               <button
                 onClick={handleSavePassword}
-                className="flex-1 py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 transition-colors flex items-center justify-center gap-2"
+                disabled={!!(passwordForm.confirmPassword && passwordForm.password !== passwordForm.confirmPassword)}
+                className="flex-1 py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <SaveIcon size={18} />
                 Guardar

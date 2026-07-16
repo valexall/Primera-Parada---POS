@@ -1,7 +1,7 @@
 import { supabase } from '../../config/supabase';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import type { LoginRequest, RegisterRequest, LoginResponse, RegisterResponse, DbUser, JWTPayload } from './auth.types';
+import type { LoginRequest, RegisterRequest, LoginResponse, RegisterResponse, DbUser, JWTPayload, ChangePasswordRequest } from './auth.types';
 import {
   ValidationError,
   UnauthorizedError,
@@ -192,6 +192,54 @@ export const updateUserPassword = async (userId: string, newPassword: string) =>
 
   if (error) {
     throw new Error(`Error actualizando contraseña: ${error.message}`);
+  }
+
+  return { message: 'Contraseña actualizada exitosamente' };
+};
+
+export const changeOwnPassword = async (userId: string, data: ChangePasswordRequest) => {
+  const { currentPassword, newPassword } = data;
+
+  if (!currentPassword || !newPassword) {
+    throw new ValidationError('La contraseña actual y la nueva son requeridas');
+  }
+
+  if (newPassword.length < 6) {
+    throw new ValidationError('La nueva contraseña debe tener al menos 6 caracteres');
+  }
+
+  // Obtener el hash actual del usuario
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('password')
+    .eq('id', userId)
+    .single<{ password: string }>();
+
+  if (error || !user) {
+    throw new UnauthorizedError('Usuario no encontrado');
+  }
+
+  // Verificar que la contraseña actual es correcta
+  const validPassword = await bcrypt.compare(currentPassword, user.password);
+  if (!validPassword) {
+    throw new UnauthorizedError('La contraseña actual es incorrecta');
+  }
+
+  // Evitar que se use la misma contraseña
+  const samePassword = await bcrypt.compare(newPassword, user.password);
+  if (samePassword) {
+    throw new ValidationError('La nueva contraseña no puede ser igual a la actual');
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  const { error: updateError } = await supabase
+    .from('users')
+    .update({ password: hashedPassword })
+    .eq('id', userId);
+
+  if (updateError) {
+    throw new Error(`Error actualizando contraseña: ${updateError.message}`);
   }
 
   return { message: 'Contraseña actualizada exitosamente' };

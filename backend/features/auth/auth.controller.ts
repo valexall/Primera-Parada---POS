@@ -44,6 +44,17 @@ export const updateUserPassword = asyncHandler(async (req: Request, res: Respons
   res.json(result);
 });
 
+export const changeOwnPassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  // El userId viene del token JWT, no de los params (seguridad)
+  const userId = (req as any).user?.id;
+  if (!userId) {
+    res.status(401).json({ error: 'No autenticado' });
+    return;
+  }
+  const result = await AuthService.changeOwnPassword(userId, req.body);
+  res.json(result);
+});
+
 
 export const toggleUserStatus = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
