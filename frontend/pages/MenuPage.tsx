@@ -3,6 +3,7 @@ import { PlusIcon, PencilIcon, TrashIcon, SearchIcon, XIcon, SaveIcon, XCircleIc
 import { MenuItem } from '../types';
 import { menuService } from '../services/menuService';
 import { useMenu } from '../context/MenuContext';
+import { API_CONFIG } from '../constants/api';
 import toast from 'react-hot-toast';
 
 const MenuPage: React.FC = () => {
@@ -15,17 +16,8 @@ const MenuPage: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', price: '' });
   
-  // Estados para reconocimiento de voz
-  const [isListening, setIsListening] = useState(false);
-  const [voiceSupported, setVoiceSupported] = useState(false); // Si el navegador lo soporta
-  const [voiceEnabled, setVoiceEnabled] = useState(true); // Si está habilitado para el usuario
-  const [voiceErrorCount, setVoiceErrorCount] = useState(0); // Contador de errores
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const hasProcessedResultRef = useRef(false); // Evitar duplicados
-  
-  // Estados para grabación de audio (alternativa a Web Speech API)
+  // Estados para grabación de audio con Groq
   const [isRecording, setIsRecording] = useState(false);
-  const [useAudioRecording, setUseAudioRecording] = useState(false); // Cambiar a grabación directa
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   
@@ -35,84 +27,7 @@ const MenuPage: React.FC = () => {
   // Precios rápidos comunes
   const quickPrices = ['10.00', '12.00', '15.00', '20.00'];
 
-  // ❌ ELIMINADO: useEffect(() => { loadMenu(); }, []);
-  // ❌ ELIMINADO: const loadMenu = async () => { ... };
-  
-  // Inicializar reconocimiento de voz
-  useEffect(() => {
-    // Verificar si el navegador soporta Web Speech API
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    
-    if (SpeechRecognition) {
-      setVoiceSupported(true);
-      const recognition = new SpeechRecognition();
-      
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'es-ES'; // Español
-      
-      recognition.onstart = () => {
-        setIsListening(true);
-        hasProcessedResultRef.current = false;
-      };
-      
-      recognition.onresult = (event: any) => {
-        // Evitar procesar múltiples veces el mismo resultado
-        if (hasProcessedResultRef.current) return;
-        
-        const transcript = event.results[0][0].transcript;
-        setFormData(prev => ({ ...prev, name: transcript }));
-        setIsListening(false);
-        setVoiceErrorCount(0);
-        hasProcessedResultRef.current = true; // Marcar como procesado
-      };
-      
-      recognition.onerror = (event: any) => {
-        // Si es error de network, cambiar silenciosamente al modo alternativo
-        if (event.error === 'network') {
-          setVoiceEnabled(false);
-          setUseAudioRecording(true);
-          setIsListening(false);
-          return;
-        }
-        
-        // Para otros errores, cambiar después de 2 intentos
-        setVoiceErrorCount(prev => {
-          const newCount = prev + 1;
-          
-          if (newCount >= 2) {
-            setVoiceEnabled(false);
-            setUseAudioRecording(true);
-          }
-          
-          return newCount;
-        });
-        
-        setIsListening(false);
-      };
-      
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-      
-      recognitionRef.current = recognition;
-    } else {
-      setVoiceSupported(false);
-      setUseAudioRecording(true);
-    }
-    
-    return () => {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.abort();
-        } catch (e) {
-          // Ignorar errores al limpiar
-        }
-      }
-    };
-  }, []);
-  
-  // Nueva función: Grabar audio y transcribir con Groq Whisper
+  // Grabar audio y transcribir con Groq Whisper
   const startAudioRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -165,8 +80,12 @@ const MenuPage: React.FC = () => {
       const formData = new FormData();
       formData.append('audio', audioBlob, 'audio.webm');
       
-      const response = await fetch('http://localhost:3001/api/transcription/audio', {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_CONFIG.BASE_URL}/transcription/audio`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         body: formData,
       });
       
@@ -181,63 +100,6 @@ const MenuPage: React.FC = () => {
       
     } catch (error: any) {
       toast.error('Error al transcribir. Intenta de nuevo.');
-    }
-  };
-  
-  const toggleVoiceInput = () => {
-    if (useAudioRecording) {
-      // Usar grabación de audio
-      if (isRecording) {
-        stopAudioRecording();
-      } else {
-        startAudioRecording();
-      }
-    } else {
-      // Usar Web Speech API (Google)
-      toggleVoiceRecognition();
-    }
-  };
-  
-  const toggleVoiceRecognition = async () => {
-    if (!recognitionRef.current || !voiceSupported) {
-      toast.error('Tu navegador no soporta reconocimiento de voz', { duration: 3000 });
-      return;
-    }
-    
-    if (isListening) {
-      recognitionRef.current.abort();
-      setIsListening(false);
-      return;
-    }
-    
-    // Verificar permisos del micrófono primero
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop());
-      
-      // Ahora iniciar el reconocimiento
-      try {
-        hasProcessedResultRef.current = false; // Reset antes de iniciar
-        recognitionRef.current.start();
-        setIsListening(true);
-      } catch (error: any) {
-        if (error.message?.includes('already started')) {
-          recognitionRef.current.abort();
-          setTimeout(() => {
-            recognitionRef.current?.start();
-            setIsListening(true);
-          }, 100);
-        }
-      }
-    } catch (error: any) {
-      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        toast.error('Debes permitir el acceso al micrófono', { duration: 4000 });
-      } else if (error.name === 'NotFoundError') {
-        toast.error('No se encontró ningún micrófono', { duration: 4000 });
-      } else {
-        toast.error('Error al acceder al micrófono');
-      }
-      setIsListening(false);
     }
   };
 
@@ -262,57 +124,47 @@ const MenuPage: React.FC = () => {
         // Optimistic update
         updateMenuItemLocal(editingId, { name: formData.name, price: parseFloat(formData.price) });
         
-        await menuService.update(editingId, { name: formData.name, price: parseFloat(formData.price) });
-        toast.success('Plato actualizado');
+        const result = await menuService.updateMenuItem(editingId, {
+          name: formData.name,
+          price: parseFloat(formData.price)
+        });
+        
+        if (result) {
+          toast.success('Plato actualizado exitosamente');
+        } else {
+          toast.error('Error al actualizar plato');
+        }
       } else {
-        await menuService.create({ name: formData.name, price: parseFloat(formData.price) });
-        toast.success('Plato creado');
-        // Guardar último precio usado
-        setLastUsedPrice(formData.price);
-        // ✅ No se necesita loadMenu() - Realtime lo manejará
+        const newItem = await menuService.createMenuItem({
+          name: formData.name,
+          price: parseFloat(formData.price)
+        });
+        
+        if (newItem) {
+          toast.success('Plato agregado exitosamente');
+          setLastUsedPrice(formData.price);
+        } else {
+          toast.error('Error al crear plato');
+        }
       }
+      
       setIsModalOpen(false);
-    } catch (e) {
-      toast.error('Error al guardar');
+      setFormData({ name: '', price: '' });
+      setEditingId(null);
+    } catch (error) {
+      toast.error('Error al procesar la solicitud');
     }
   };
 
-  const handleDelete = (id: string) => {
-    // Alerta personalizada "In-App"
-    toast((t) => (
-      <div className="flex flex-col gap-3">
-        <div>
-          <p className="font-bold text-slate-800">¿Estás seguro?</p>
-          <p className="text-sm text-slate-500">Eliminarás este plato permanentemente.</p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => toast.dismiss(t.id)}
-            className="flex-1 px-3 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={async () => {
-              toast.dismiss(t.id);
-              await menuService.delete(id);
-              toast.success('Plato eliminado');
-              // ✅ No se necesita loadMenu() - Realtime lo manejará
-            }}
-            className="flex-1 px-3 py-2 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 shadow-md shadow-red-200"
-          >
-            Sí, eliminar
-          </button>
-        </div>
-      </div>
-    ), { 
-      duration: 5000, 
-      icon: '🗑️',
-      style: { minWidth: '300px' } 
-    });
+  const toggleVoiceInput = () => {
+    if (isRecording) {
+      stopAudioRecording();
+    } else {
+      startAudioRecording();
+    }
   };
 
-  const handleToggleAvailability = async (item: MenuItem) => {
+  const toggleAvailability = async (item: MenuItem) => {
     const newAvailability = !item.is_available;
     
     // Optimistic update
@@ -329,6 +181,18 @@ const MenuPage: React.FC = () => {
       // Revertir si falla
       updateMenuItemLocal(item.id, { is_available: item.is_available });
       toast.error('Error al actualizar disponibilidad');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Estás seguro de eliminar este plato?')) return;
+    
+    const result = await menuService.deleteMenuItem(id);
+    
+    if (result) {
+      toast.success('Plato eliminado exitosamente');
+    } else {
+      toast.error('Error al eliminar plato');
     }
   };
 
@@ -398,7 +262,7 @@ const MenuPage: React.FC = () => {
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
-                        onClick={() => handleToggleAvailability(item)}
+                        onClick={() => toggleAvailability(item)}
                         className={`p-2 rounded-lg transition-colors ${
                           item.is_available === false
                             ? 'text-red-400 dark:text-red-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30'
@@ -450,48 +314,28 @@ const MenuPage: React.FC = () => {
                   <input 
                     autoFocus
                     type="text" 
-                    className={`w-full p-3 ${(voiceSupported && voiceEnabled) || useAudioRecording ? 'pr-12' : 'pr-4'} border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-medium bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200`}
+                    className="w-full p-3 pr-12 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-medium bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200"
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
                     required
                     placeholder="Ej: Lomo Saltado"
                   />
-                  {((voiceSupported && voiceEnabled) || useAudioRecording) && (
-                    <button
-                      type="button"
-                      onClick={toggleVoiceInput}
-                      className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all ${
-                        isListening || isRecording
-                          ? 'bg-red-500 text-white animate-pulse shadow-lg' 
-                          : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-amber-100 dark:hover:bg-amber-900/30 hover:text-amber-600'
-                      }`}
-                      title={isListening || isRecording ? 'Detener grabación' : (useAudioRecording ? 'Grabar y transcribir con Groq' : 'Dictar con voz')}
-                    >
-                      {isListening || isRecording ? <MicOffIcon size={18} /> : <MicIcon size={18} />}
-                    </button>
-                  )}
-                </div>
-                {(isListening || isRecording) && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1 animate-pulse">
-                    🎤 {isRecording ? 'Grabando... Haz clic para terminar' : 'Escuchando...'}
-                  </p>
-                )}
-                {voiceSupported && !voiceEnabled && !useAudioRecording && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setVoiceEnabled(true);
-                      setVoiceErrorCount(0);
-                      toast.success('Reconocimiento de voz reactivado');
-                    }}
-                    className="text-xs text-amber-600 dark:text-amber-400 mt-1 hover:underline"
+                    onClick={toggleVoiceInput}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all ${
+                      isRecording
+                        ? 'bg-red-500 text-white animate-pulse shadow-lg' 
+                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-amber-100 dark:hover:bg-amber-900/30 hover:text-amber-600'
+                    }`}
+                    title={isRecording ? 'Detener grabación' : 'Grabar y transcribir con Groq'}
                   >
-                    🔄 Reactivar reconocimiento de voz
+                    {isRecording ? <MicOffIcon size={18} /> : <MicIcon size={18} />}
                   </button>
-                )}
-                {!voiceSupported && !useAudioRecording && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    💡 Tu navegador no soporta dictado por voz
+                </div>
+                {isRecording && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1 animate-pulse">
+                    🎤 Grabando... Haz clic para terminar
                   </p>
                 )}
               </div>

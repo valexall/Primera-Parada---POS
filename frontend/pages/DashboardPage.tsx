@@ -224,7 +224,7 @@ const DashboardPage: React.FC = () => {
                 </datalist>
               </div>
             </div>
-            <button type="submit" className="w-full py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 shadow-lg shadow-red-200 transition-transform active:scale-95">
+            <button type="submit" className="w-full py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 shadow-lg transition-transform active:scale-95">
               Registrar Gasto
             </button>
           </form>

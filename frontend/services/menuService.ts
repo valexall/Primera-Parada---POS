@@ -32,6 +32,13 @@ export const menuService = {
   },
 
   /**
+   * Alias de compatibilidad para código legado
+   */
+  createMenuItem: async (item: Omit<MenuItem, 'id'>): Promise<MenuItem | null> => {
+    return menuService.create(item);
+  },
+
+  /**
    * Actualiza un item del menú
    */
   update: async (id: string, item: Partial<MenuItem>): Promise<MenuItem | null> => {
@@ -45,6 +52,13 @@ export const menuService = {
   },
 
   /**
+   * Alias de compatibilidad para código legado
+   */
+  updateMenuItem: async (id: string, item: Partial<MenuItem>): Promise<MenuItem | null> => {
+    return menuService.update(id, item);
+  },
+
+  /**
    * Elimina un item del menú
    */
   delete: async (id: string): Promise<boolean> => {
@@ -55,6 +69,13 @@ export const menuService = {
       console.error('Error deleting menu item:', error);
       return false;
     }
+  },
+
+  /**
+   * Alias de compatibilidad para código legado
+   */
+  deleteMenuItem: async (id: string): Promise<boolean> => {
+    return menuService.delete(id);
   },
 
   /**
