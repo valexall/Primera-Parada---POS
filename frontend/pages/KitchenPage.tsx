@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { ClockIcon, CheckCircleIcon, SoupIcon, BellIcon, EditIcon, UtensilsIcon, PackageIcon, XIcon, AlertTriangleIcon, BarChart3Icon, TrendingUpIcon, Check, ChefHat } from 'lucide-react';
+import { ClockIcon, CheckCircleIcon, SoupIcon, BellIcon, EditIcon, UtensilsIcon, PackageIcon, XIcon, AlertTriangleIcon, BarChart3Icon, TrendingUpIcon, Check, ChefHat, Volume2Icon, VolumeXIcon } from 'lucide-react';
 import { Order, OrderStatus, OrderItem } from '../types';
 import { orderService } from '../services/orderService';
 import { menuService } from '../services/menuService';
@@ -7,6 +7,59 @@ import { supabaseClient } from '../services/supabaseClient';
 import { SkeletonCard } from '../components/ui/Loader';
 import EditOrderModal from '../components/ui/EditOrderModal';
 import toast from 'react-hot-toast';
+import { playNotificationSound, getSoundMuted, toggleSoundMuted, unlockAudioContext } from '../utils/soundNotify';
+
+// ─── Componente Cronómetro de Orden en Vivo (RF16) ──────────────────────────
+const OrderTimer: React.FC<{ timestamp: number | string; status: OrderStatus }> = ({ timestamp, status }) => {
+  const [elapsedMinutes, setElapsedMinutes] = useState<number>(0);
+
+  useEffect(() => {
+    const updateTimer = () => {
+      const start = new Date(timestamp).getTime();
+      const now = Date.now();
+      const diffMin = Math.floor(Math.max(0, now - start) / 60000);
+      setElapsedMinutes(diffMin);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 30000); // Actualizar cada 30 segundos
+    return () => clearInterval(interval);
+  }, [timestamp]);
+
+  const ingressTime = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // Colores y alertas visuales por tiempo transcurrido (para órdenes pendientes)
+  let badgeStyle = 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300';
+  let label = `${elapsedMinutes} min`;
+
+  if (status === 'Pendiente') {
+    if (elapsedMinutes >= 25) {
+      badgeStyle = 'bg-red-500 text-white animate-pulse shadow-md shadow-red-500/30';
+      label = `🔥 ${elapsedMinutes} min - CRÍTICO`;
+    } else if (elapsedMinutes >= 15) {
+      badgeStyle = 'bg-amber-500 text-white shadow-md shadow-amber-500/30';
+      label = `⚠️ ${elapsedMinutes} min - Demora`;
+    } else {
+      badgeStyle = 'bg-green-600 text-white';
+      label = `⏱ ${elapsedMinutes} min`;
+    }
+  } else if (status === 'Listo') {
+    badgeStyle = 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300';
+    label = `✓ Listo en ${elapsedMinutes} min`;
+  }
+
+  return (
+    <div className="flex items-center gap-2 mt-2 flex-wrap">
+      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+        <ClockIcon size={14} className="text-amber-500" />
+        Ingreso: {ingressTime}
+      </span>
+      <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg transition-all ${badgeStyle}`}>
+        {label}
+      </span>
+    </div>
+  );
+};
 
 const KitchenPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -15,7 +68,8 @@ const KitchenPage: React.FC = () => {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
   const [dailyStats, setDailyStats] = useState<{ name: string; quantity: number }[]>([]);
-  const [showStats, setShowStats] = useState(false); 
+  const [showStats, setShowStats] = useState(false);
+  const [isMuted, setIsMuted] = useState<boolean>(() => getSoundMuted());
   const lastLocalUpdateRef = useRef<{ orderId: string; timestamp: number } | null>(null);
 
   const loadOrders = useCallback(async (isInitial = false) => {
@@ -36,6 +90,7 @@ const KitchenPage: React.FC = () => {
   }, [filter]);
  
   useEffect(() => {
+    unlockAudioContext();
     loadOrders(true);
     loadDailyStats();
   }, [loadOrders]);
@@ -59,7 +114,26 @@ const KitchenPage: React.FC = () => {
               if (exists) return current;
               return [newOrder, ...current];
             });
-          } 
+          }
+          // RF16: Disparar aviso sonoro y notificación visual si el pedido está Pendiente
+          if (newOrder.status === 'Pendiente') {
+            playNotificationSound(false);
+            const mesaTexto = newOrder.orderType === 'Dine-In'
+              ? `Mesa ${newOrder.tableNumber || '?'}`
+              : `Para Llevar (${newOrder.customerName || 'Cliente'})`;
+
+            toast.success(`¡Nuevo pedido recibido! ${mesaTexto}`, {
+              icon: '🔔',
+              duration: 5000,
+              style: {
+                border: '2px solid #f59e0b',
+                background: '#1e293b',
+                color: '#fff',
+                fontWeight: 'bold',
+                fontSize: '15px',
+              },
+            });
+          }
           if (newOrder.status === 'Entregado') {
             loadDailyStats();
           }
@@ -126,7 +200,7 @@ const KitchenPage: React.FC = () => {
         table: 'order_items' 
       }, async (payload) => {
         try { 
-          const orderId = payload.new?.order_id || payload.old?.order_id;
+          const orderId = (payload.new as { order_id?: string })?.order_id || (payload.old as { order_id?: string })?.order_id;
           
           if (!orderId) return;
            
@@ -147,6 +221,9 @@ const KitchenPage: React.FC = () => {
             } else if (exists && !shouldDisplay) {
               return current.filter(o => o.id !== orderId);
             } else if (!exists && shouldDisplay) {
+              if (fullOrder.status === 'Pendiente') {
+                playNotificationSound(false);
+              }
               return [fullOrder, ...current];
             }
             
@@ -292,7 +369,28 @@ const KitchenPage: React.FC = () => {
           </div>
         </div>
         
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {/* RF16 — Botón para silenciar / activar aviso sonoro automático */}
+          <button
+            onClick={() => {
+              const next = toggleSoundMuted();
+              setIsMuted(next);
+              toast(next ? 'Sonido de cocina silenciado' : 'Sonido de cocina activado', {
+                icon: next ? '🔕' : '🔔',
+                duration: 2000,
+              });
+            }}
+            className={`px-3 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 ${
+              isMuted
+                ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700'
+                : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700'
+            }`}
+            title={isMuted ? 'Aviso sonoro silenciado' : 'Aviso sonoro activo'}
+          >
+            {isMuted ? <VolumeXIcon size={18} /> : <Volume2Icon size={18} />}
+            <span className="hidden sm:inline">{isMuted ? 'Silenciado' : 'Sonido Activo'}</span>
+          </button>
+
           {/* Botón de Estadísticas */}
           <button
             onClick={() => setShowStats(!showStats)}
@@ -425,10 +523,8 @@ const KitchenPage: React.FC = () => {
                   )}
                   <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">#{order.id.slice(-4)}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mt-2">
-                  <ClockIcon size={14} />
-                  {new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                </div>
+                {/* RF16 — Hora de ingreso y cronómetro en vivo de espera */}
+                <OrderTimer timestamp={order.timestamp} status={order.status} />
               </div>
               {order.status === 'Pendiente' && <BellIcon className="text-amber-500 animate-pulse" />}
             </div>
@@ -474,9 +570,10 @@ const KitchenPage: React.FC = () => {
                         }`}>
                           {item.menuItemName}
                         </span>
+                        {/* RF16 — Notas y aclaraciones del cliente resaltadas */}
                         {item.notes && (
-                          <span className="text-sm text-red-500 dark:text-red-400 font-medium bg-red-50 dark:bg-red-900/30 px-1 rounded block mt-1">
-                            * {item.notes}
+                          <span className="text-sm text-amber-950 dark:text-amber-200 font-bold bg-amber-200 dark:bg-amber-900/60 border border-amber-400 dark:border-amber-600 px-2.5 py-1 rounded-md inline-block mt-1 shadow-sm">
+                            ⚠️ NOTA: {item.notes}
                           </span>
                         )}
                         {isReady && (
