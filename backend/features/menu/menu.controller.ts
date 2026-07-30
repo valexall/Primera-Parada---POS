@@ -4,6 +4,11 @@ import * as MenuImagesService from './menu-images.service';
 import type { CreateMenuItemRequest, UpdateMenuItemRequest, ToggleAvailabilityRequest } from './menu.types';
 import { asyncHandler, ValidationError } from '../../middleware/errorHandler';
 
+// RF46 — Endpoint público: no requiere autenticación
+export const getPublicMenu = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const menuItems = await MenuService.getPublicMenu();
+  res.json(menuItems);
+});
 
 export const getMenu = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const menuItems = await MenuService.getAllMenuItems();

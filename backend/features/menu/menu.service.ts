@@ -7,6 +7,22 @@ import {
   ConflictError
 } from '../../middleware/errorHandler';
 
+// RF46 — Menú público: solo items disponibles, sin autenticación
+export const getPublicMenu = async (): Promise<MenuItem[]> => {
+  const { data, error } = await supabase
+    .from('menu_items')
+    .select('id, name, price, category, is_available, image_url')
+    .eq('is_available', true)
+    .order('category', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (error) {
+    throw new Error(`Error fetching public menu: ${error.message}`);
+  }
+
+  return data || [];
+};
+
 
 export const getAllMenuItems = async (): Promise<MenuItem[]> => {
   const { data, error } = await supabase

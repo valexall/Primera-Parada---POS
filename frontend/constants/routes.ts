@@ -11,6 +11,7 @@ export const ROUTES = {
   USER_MANAGEMENT: '/user-management',
   HISTORY: '/history',
   MENU_HISTORY: '/menu-history',
+  PUBLIC_MENU: '/menu-publico', // RF46 — Acceso sin login
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

@@ -20,6 +20,7 @@ import UserManagementPage from './pages/UserManagementPage';
 import LoginPage from './pages/LoginPage';
 import HistoryPage from './pages/HistoryPage';
 import MenuHistoryPage from './pages/MenuHistoryPage';
+import PublicMenuPage from './pages/PublicMenuPage'; // RF46 — Sin auth
 
 export function App() {
   return (
@@ -59,6 +60,9 @@ export function App() {
 
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+
+          {/* RF46 — Menú público: accesible sin autenticación */}
+          <Route path={ROUTES.PUBLIC_MENU} element={<PublicMenuPage />} />
 
           <Route path="/*" element={
             <ProtectedRoute>

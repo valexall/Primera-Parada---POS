@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import {
   getMenu,
+  getPublicMenu,
   addMenuItem,
   updateMenuItem,
   deleteMenuItem,
@@ -19,6 +20,9 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB — límite también a nivel de multer
 });
+
+// RF46 — Ruta pública sin autenticación (DEBE ir antes de router.use(verifyToken))
+router.get('/public', getPublicMenu);
 
 router.use(verifyToken);
 
