@@ -1,5 +1,6 @@
 import { supabase } from '../../config/supabase';
 import type { MenuItem, CreateMenuItemRequest, UpdateMenuItemRequest, DailyMenuStats } from './menu.types';
+import { VALID_CATEGORIES } from './menu.types';
 import {
   ValidationError,
   NotFoundError,
@@ -49,11 +50,18 @@ export const addMenuItem = async (itemData: CreateMenuItemRequest): Promise<Menu
     throw new ValidationError('El nombre debe ser un texto no vacío');
   }
 
+  // RF45 — Validar categoría
+  const category = itemData.category ?? 'Extras';
+  if (!VALID_CATEGORIES.includes(category)) {
+    throw new ValidationError(`Categoría inválida. Las categorías válidas son: ${VALID_CATEGORIES.join(', ')}`);
+  }
+
   const { data, error } = await supabase
     .from('menu_items')
     .insert([{
       name: name.trim(),
-      price: parseFloat(price.toString())
+      price: parseFloat(price.toString()),
+      category,
     }])
     .select()
     .single();
@@ -73,7 +81,7 @@ export const updateMenuItem = async (id: string, updates: UpdateMenuItemRequest)
     throw new ValidationError('El ID del ítem es requerido');
   }
 
-  const updateData: { name?: string; price?: number; image_url?: string | null } = {};
+  const updateData: { name?: string; price?: number; category?: string; image_url?: string | null } = {};
 
   if (updates.name !== undefined) {
     if (typeof updates.name !== 'string' || updates.name.trim().length === 0) {
@@ -87,6 +95,14 @@ export const updateMenuItem = async (id: string, updates: UpdateMenuItemRequest)
       throw new ValidationError('El precio debe ser un número positivo');
     }
     updateData.price = parseFloat(updates.price.toString());
+  }
+
+  // RF45 — actualizar categoría
+  if (updates.category !== undefined) {
+    if (!VALID_CATEGORIES.includes(updates.category)) {
+      throw new ValidationError(`Categoría inválida. Las categorías válidas son: ${VALID_CATEGORIES.join(', ')}`);
+    }
+    updateData.category = updates.category;
   }
 
   // RF12 — permitir actualizar/limpiar image_url

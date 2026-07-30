@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { PlusIcon, MinusIcon, ShoppingBagIcon, ChevronRightIcon, ChevronDownIcon, UtensilsIcon, PackageIcon, ZapIcon, ClipboardList } from 'lucide-react';
-import { MenuItem, OrderItem } from '../types';
+import { PlusIcon, MinusIcon, ShoppingBagIcon, ChevronRightIcon, ChevronDownIcon, UtensilsIcon, PackageIcon, ZapIcon, ClipboardList, TagIcon } from 'lucide-react';
+import { MenuItem, OrderItem, MENU_CATEGORIES, CATEGORY_COLORS, MenuCategory } from '../types';
 import { menuService } from '../services/menuService';
 import { orderService } from '../services/orderService';
 import { useMenu } from '../context/MenuContext';
@@ -29,15 +29,14 @@ const OrderPage: React.FC = () => {
   const [addToMenu, setAddToMenu] = useState(false);
 
   const TABLES = ['1', '2', '3', '4', '5', '6', 'Barra 1', 'Delivery'];
-  const CATEGORIES = ['Todos', 'Entradas', 'Fondos', 'Bebidas', 'Postres', 'Extras'];
 
   // ❌ ELIMINADO: useEffect(() => { loadMenu(); }, []);
   // ❌ ELIMINADO: const loadMenu = async () => { ... };
 
+  // RF45 — Filtro real por categoría
   const filteredItems = useMemo(() => {
     if (selectedCategory === 'Todos') return menuItems;
-    // Filtro simulado (ajusta según tu BD)
-    return menuItems; 
+    return menuItems.filter(item => item.category === selectedCategory);
   }, [selectedCategory, menuItems]);
 
   const addToOrder = (item: MenuItem) => {
@@ -313,7 +312,7 @@ const OrderPage: React.FC = () => {
         {/* Categorías (Sticky) */}
         <div className="mb-4 shrink-0">
           <CategoryTabs 
-            categories={CATEGORIES} 
+            categories={['Todos', ...MENU_CATEGORIES]} 
             selected={selectedCategory} 
             onSelect={setSelectedCategory} 
           />
@@ -386,7 +385,7 @@ const OrderPage: React.FC = () => {
                   )}
                   
                   <div className="flex justify-between items-start">
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <h3 className={`font-bold leading-tight mb-1 ${
                         isUnavailable 
                           ? 'text-slate-400 dark:text-slate-600 line-through' 
@@ -394,11 +393,20 @@ const OrderPage: React.FC = () => {
                       }`}>
                         {item.name}
                       </h3>
+                      {/* RF45 — Badge de categoría */}
+                      {item.category && !isUnavailable && (() => {
+                        const colors = CATEGORY_COLORS[item.category as MenuCategory];
+                        return colors ? (
+                          <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold mb-1 ${colors.bg} ${colors.text} ${colors.darkBg} ${colors.darkText}`}>
+                            <TagIcon size={8} />{item.category}
+                          </span>
+                        ) : null;
+                      })()}
                       <p className="text-slate-400 dark:text-slate-500 text-xs">
-                        {isUnavailable ? 'No disponible temporalmente' : 'Descripción corta...'}
+                        {isUnavailable ? 'No disponible temporalmente' : ''}
                       </p>
                     </div>
-                    <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
+                    <span className={`text-xs font-bold px-2 py-1 rounded-lg ml-2 ${
                       isUnavailable 
                         ? 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400' 
                         : 'bg-slate-900 dark:bg-amber-600 text-white'

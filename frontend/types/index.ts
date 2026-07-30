@@ -1,9 +1,25 @@
 // Tipos principales de la aplicación
 
+// RF45 — Tipo de plato y categorías válidas
+export type MenuCategory = 'Entradas' | 'Segundos' | 'Frituras' | 'Bebidas' | 'Postres' | 'Extras';
+
+export const MENU_CATEGORIES: MenuCategory[] = ['Entradas', 'Segundos', 'Frituras', 'Bebidas', 'Postres', 'Extras'];
+
+/** Badge color por categoría para UI */
+export const CATEGORY_COLORS: Record<MenuCategory, { bg: string; text: string; darkBg: string; darkText: string }> = {
+  Entradas:  { bg: 'bg-green-100',  text: 'text-green-700',  darkBg: 'dark:bg-green-900/30',  darkText: 'dark:text-green-400'  },
+  Segundos:  { bg: 'bg-orange-100', text: 'text-orange-700', darkBg: 'dark:bg-orange-900/30', darkText: 'dark:text-orange-400' },
+  Frituras:  { bg: 'bg-yellow-100', text: 'text-yellow-700', darkBg: 'dark:bg-yellow-900/30', darkText: 'dark:text-yellow-400' },
+  Bebidas:   { bg: 'bg-blue-100',   text: 'text-blue-700',   darkBg: 'dark:bg-blue-900/30',   darkText: 'dark:text-blue-400'   },
+  Postres:   { bg: 'bg-pink-100',   text: 'text-pink-700',   darkBg: 'dark:bg-pink-900/30',   darkText: 'dark:text-pink-400'   },
+  Extras:    { bg: 'bg-slate-100',  text: 'text-slate-600',  darkBg: 'dark:bg-slate-700',     darkText: 'dark:text-slate-300'  },
+};
+
 export interface MenuItem {
   id: string;
   name: string;
   price: number;
+  category?: MenuCategory; // RF45
   is_available?: boolean; // TRUE = disponible, FALSE = agotado
   image_url?: string | null;
 }

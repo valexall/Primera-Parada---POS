@@ -1,5 +1,5 @@
 import api from './api';
-import { MenuItem } from '../types';
+import { MenuItem, MenuCategory } from '../types';
 
 /**
  * Servicio para operaciones relacionadas con el menú
@@ -34,7 +34,7 @@ export const menuService = {
   /**
    * Alias de compatibilidad para código legado
    */
-  createMenuItem: async (item: Omit<MenuItem, 'id'>): Promise<MenuItem | null> => {
+  createMenuItem: async (item: Omit<MenuItem, 'id'> & { category?: MenuCategory }): Promise<MenuItem | null> => {
     return menuService.create(item);
   },
 

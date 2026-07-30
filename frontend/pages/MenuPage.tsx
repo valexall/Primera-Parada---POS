@@ -2,12 +2,13 @@ import React, { useState, useRef, useCallback } from 'react';
 import {
   PlusIcon, PencilIcon, TrashIcon, SearchIcon, XIcon, SaveIcon,
   XCircleIcon, CheckCircleIcon, UtensilsCrossed, MicIcon, MicOffIcon,
-  ImageIcon, Upload, Trash2Icon, ImageOffIcon,
+  ImageIcon, Upload, Trash2Icon, ImageOffIcon, TagIcon,
 } from 'lucide-react';
-import { MenuItem } from '../types';
+import { MenuItem, MenuCategory, MENU_CATEGORIES, CATEGORY_COLORS } from '../types';
 import { menuService } from '../services/menuService';
 import { useMenu } from '../context/MenuContext';
 import { API_CONFIG } from '../constants/api';
+import { CategoryTabs } from '../components/common/CategoryTabs';
 import toast from 'react-hot-toast';
 
 // ─── Constantes de validación (RF12) ────────────────────────────────────────
@@ -163,9 +164,10 @@ const MenuPage: React.FC = () => {
   const { menuItems, updateMenuItemLocal } = useMenu();
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', price: '' });
+  const [formData, setFormData] = useState({ name: '', price: '', category: 'Extras' as MenuCategory });
 
   // Estados de imagen (RF12)
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
@@ -253,10 +255,10 @@ const MenuPage: React.FC = () => {
   const openModal = (item?: MenuItem) => {
     if (item) {
       setEditingId(item.id);
-      setFormData({ name: item.name, price: item.price.toString() });
+      setFormData({ name: item.name, price: item.price.toString(), category: (item.category ?? 'Extras') as MenuCategory });
     } else {
       setEditingId(null);
-      setFormData({ name: '', price: lastUsedPrice || '' });
+      setFormData({ name: '', price: lastUsedPrice || '', category: 'Extras' });
     }
     resetImageState();
     setIsModalOpen(true);
@@ -264,7 +266,7 @@ const MenuPage: React.FC = () => {
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setFormData({ name: '', price: '' });
+    setFormData({ name: '', price: '', category: 'Extras' });
     setEditingId(null);
     resetImageState();
   };
@@ -302,12 +304,13 @@ const MenuPage: React.FC = () => {
       let savedItemId: string | null = editingId;
 
       if (editingId) {
-        // Optimistic update de nombre/precio
-        updateMenuItemLocal(editingId, { name: formData.name, price: parseFloat(formData.price) });
+        // Optimistic update de nombre/precio/categoría
+        updateMenuItemLocal(editingId, { name: formData.name, price: parseFloat(formData.price), category: formData.category });
 
         const result = await menuService.updateMenuItem(editingId, {
           name: formData.name,
           price: parseFloat(formData.price),
+          category: formData.category,
         });
 
         if (result) {
@@ -320,6 +323,7 @@ const MenuPage: React.FC = () => {
         const newItem = await menuService.createMenuItem({
           name: formData.name,
           price: parseFloat(formData.price),
+          category: formData.category,
         });
 
         if (newItem) {
@@ -401,9 +405,11 @@ const MenuPage: React.FC = () => {
     }
   };
 
-  const filteredItems = menuItems.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredItems = menuItems.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'Todos' || item.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   // Plato siendo editado (para la zona de imagen)
   const editingItem = editingId ? menuItems.find(m => m.id === editingId) : null;
@@ -432,14 +438,24 @@ const MenuPage: React.FC = () => {
       <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
         {/* Toolbar */}
         <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
-          <div className="relative max-w-md">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
-            <input
-              type="text"
-              placeholder="Buscar plato..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative max-w-md flex-1">
+              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
+              <input
+                type="text"
+                placeholder="Buscar plato..."
+                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          {/* RF45 — Filtro por categoría */}
+          <div className="mt-3">
+            <CategoryTabs
+              categories={['Todos', ...MENU_CATEGORIES]}
+              selected={selectedCategory}
+              onSelect={setSelectedCategory}
             />
           </div>
         </div>
@@ -451,6 +467,7 @@ const MenuPage: React.FC = () => {
               <tr>
                 <th className="px-6 py-4 w-16">Imagen</th>
                 <th className="px-6 py-4">Nombre del Plato</th>
+                <th className="px-6 py-4">Categoría</th>
                 <th className="px-6 py-4">Precio</th>
                 <th className="px-6 py-4 text-right">Acciones</th>
               </tr>
@@ -473,7 +490,7 @@ const MenuPage: React.FC = () => {
                     )}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-slate-700 dark:text-slate-200">{item.name}</span>
                       {item.is_available === false && (
                         <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold rounded-full">
@@ -481,6 +498,19 @@ const MenuPage: React.FC = () => {
                         </span>
                       )}
                     </div>
+                  </td>
+                  {/* RF45 — Columna Categoría */}
+                  <td className="px-6 py-4">
+                    {(() => {
+                      const cat = (item.category ?? 'Extras') as MenuCategory;
+                      const colors = CATEGORY_COLORS[cat];
+                      return (
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${colors.bg} ${colors.text} ${colors.darkBg} ${colors.darkText}`}>
+                          <TagIcon size={10} />
+                          {cat}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4 font-mono text-slate-600 dark:text-slate-300">S/. {item.price.toFixed(2)}</td>
                   <td className="px-6 py-4 text-right">
@@ -570,6 +600,33 @@ const MenuPage: React.FC = () => {
                     🎤 Grabando... Haz clic para terminar
                   </p>
                 )}
+              </div>
+
+              {/* RF45 — Selector de Categoría */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  <span className="flex items-center gap-1.5"><TagIcon size={14} /> Tipo de Plato</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {MENU_CATEGORIES.map(cat => {
+                    const colors = CATEGORY_COLORS[cat];
+                    const isSelected = formData.category === cat;
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, category: cat })}
+                        className={`py-2 px-3 rounded-xl text-sm font-bold border-2 transition-all ${
+                          isSelected
+                            ? `${colors.bg} ${colors.text} ${colors.darkBg} ${colors.darkText} border-current scale-105 shadow-md`
+                            : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-600 hover:border-amber-300'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Precio */}
