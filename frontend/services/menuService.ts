@@ -103,4 +103,35 @@ export const menuService = {
       return null;
     }
   },
+
+  /**
+   * RF12 — Sube o reemplaza la imagen de un plato del menú
+   * Formatos válidos: JPG, PNG, WEBP — Máximo 2 MB
+   */
+  uploadImage: async (id: string, file: File): Promise<MenuItem | null> => {
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const response = await api.post(`/menu/${id}/image`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Error al subir imagen';
+      throw new Error(msg);
+    }
+  },
+
+  /**
+   * RF12 — Elimina la imagen de un plato del menú
+   */
+  deleteImage: async (id: string): Promise<MenuItem | null> => {
+    try {
+      const response = await api.delete(`/menu/${id}/image`);
+      return response.data;
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Error al eliminar imagen';
+      throw new Error(msg);
+    }
+  },
 };

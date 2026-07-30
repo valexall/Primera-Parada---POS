@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { PlusIcon, MinusIcon, Trash2Icon, ShoppingBagIcon, ChevronRightIcon, XIcon, ChevronDownIcon, UtensilsIcon, PackageIcon, ZapIcon, ClipboardList } from 'lucide-react';
+import { PlusIcon, MinusIcon, ShoppingBagIcon, ChevronRightIcon, ChevronDownIcon, UtensilsIcon, PackageIcon, ZapIcon, ClipboardList } from 'lucide-react';
 import { MenuItem, OrderItem } from '../types';
 import { menuService } from '../services/menuService';
 import { orderService } from '../services/orderService';
@@ -142,7 +142,7 @@ const OrderPage: React.FC = () => {
           setIsSubmitting(false);
           return '¡Pedido enviado correctamente!';
         },
-        error: (err) => {
+        error: () => {
           setIsSubmitting(false);
           return 'Error al enviar pedido';
         }
@@ -367,13 +367,23 @@ const OrderPage: React.FC = () => {
                     </div>
                   )}
                   
-                  <div className={`h-24 bg-gradient-to-br rounded-xl mb-3 flex items-center justify-center text-3xl ${
-                    isUnavailable 
-                      ? 'from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-700 grayscale' 
-                      : 'from-orange-100 to-amber-50 dark:from-orange-900/30 dark:to-amber-900/20'
-                  }`}>
-                    {isUnavailable ? '❌' : '🍽️'}
-                  </div>
+                  {item.image_url ? (
+                    <div className={`h-24 rounded-xl mb-3 overflow-hidden relative ${isUnavailable ? 'grayscale' : ''}`}>
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
+                  ) : (
+                    <div className={`h-24 bg-gradient-to-br rounded-xl mb-3 flex items-center justify-center text-3xl ${
+                      isUnavailable
+                        ? 'from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-700 grayscale'
+                        : 'from-orange-100 to-amber-50 dark:from-orange-900/30 dark:to-amber-900/20'
+                    }`}>
+                      {isUnavailable ? '❌' : '🍽️'}
+                    </div>
+                  )}
                   
                   <div className="flex justify-between items-start">
                     <div>

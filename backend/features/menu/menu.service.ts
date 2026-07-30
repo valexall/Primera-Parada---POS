@@ -20,6 +20,20 @@ export const getAllMenuItems = async (): Promise<MenuItem[]> => {
   return data || [];
 };
 
+export const getMenuItemById = async (id: string): Promise<MenuItem | null> => {
+  const { data, error } = await supabase
+    .from('menu_items')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    return null;
+  }
+
+  return data;
+};
+
 export const addMenuItem = async (itemData: CreateMenuItemRequest): Promise<MenuItem> => {
   const { name, price } = itemData;
 
@@ -59,7 +73,7 @@ export const updateMenuItem = async (id: string, updates: UpdateMenuItemRequest)
     throw new ValidationError('El ID del ítem es requerido');
   }
 
-  const updateData: { name?: string; price?: number } = {};
+  const updateData: { name?: string; price?: number; image_url?: string | null } = {};
 
   if (updates.name !== undefined) {
     if (typeof updates.name !== 'string' || updates.name.trim().length === 0) {
@@ -75,8 +89,13 @@ export const updateMenuItem = async (id: string, updates: UpdateMenuItemRequest)
     updateData.price = parseFloat(updates.price.toString());
   }
 
+  // RF12 — permitir actualizar/limpiar image_url
+  if ('image_url' in updates) {
+    updateData.image_url = updates.image_url ?? null;
+  }
+
   if (Object.keys(updateData).length === 0) {
-    throw new ValidationError('Debe proporcionar al menos un campo para actualizar (nombre o precio)');
+    throw new ValidationError('Debe proporcionar al menos un campo para actualizar (nombre, precio o imagen)');
   }
 
   const { data, error } = await supabase

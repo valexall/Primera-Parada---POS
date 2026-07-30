@@ -4,17 +4,20 @@ export interface MenuItem {
   name: string;
   price: number;
   is_available: boolean;
+  image_url?: string | null;
   created_at?: string;
 }
 
 export interface CreateMenuItemRequest {
   name: string;
   price: number;
+  image_url?: string | null;
 }
 
 export interface UpdateMenuItemRequest {
   name?: string;
   price?: number;
+  image_url?: string | null;
 }
 
 export interface ToggleAvailabilityRequest {

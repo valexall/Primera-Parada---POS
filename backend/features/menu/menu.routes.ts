@@ -1,16 +1,24 @@
 import express from 'express';
+import multer from 'multer';
 import {
   getMenu,
   addMenuItem,
   updateMenuItem,
   deleteMenuItem,
   getDailyStats,
-  toggleAvailability
+  toggleAvailability,
+  uploadImage,
+  deleteImage,
 } from './menu.controller';
 import { verifyToken } from '../../middleware/authMiddleware';
 
 const router = express.Router();
 
+// Multer con almacenamiento en memoria (el buffer se envía directo a Supabase Storage)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB — límite también a nivel de multer
+});
 
 router.use(verifyToken);
 
@@ -25,5 +33,9 @@ router.put('/:id', updateMenuItem);
 router.delete('/:id', deleteMenuItem);
 
 router.patch('/:id/availability', toggleAvailability);
+
+// RF12 — Gestión de imágenes del menú
+router.post('/:id/image', upload.single('image'), uploadImage);
+router.delete('/:id/image', deleteImage);
 
 export default router;
