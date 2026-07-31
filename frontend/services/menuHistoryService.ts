@@ -6,7 +6,8 @@ import {
   RevenueTrend,
   CategoryPerformance,
   HourlySalesPattern,
-  DayComparison
+  DayComparison,
+  PaymentBreakdown
 } from '../types';
 
 export const menuHistoryService = {
@@ -150,6 +151,24 @@ export const menuHistoryService = {
     } catch (error) {
       console.error('Error comparing snapshots:', error);
       return null;
+    }
+  },
+
+  // Get payment method breakdown
+  getPaymentMethodBreakdown: async (params?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<PaymentBreakdown[]> => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.startDate) queryParams.append('startDate', params.startDate);
+      if (params?.endDate) queryParams.append('endDate', params.endDate);
+
+      const response = await api.get(`/menu-history/analytics/payment-breakdown?${queryParams.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching payment breakdown:', error);
+      return [];
     }
   }
 };

@@ -11,7 +11,8 @@ import type {
   PaginatedResponse,
   CategoryPerformance,
   HourlySalesPattern,
-  DayComparison
+  DayComparison,
+  PaymentBreakdown
 } from './menu-history.types';
 
 export const generateSnapshot = async (
@@ -502,4 +503,50 @@ export const compareSnapshots = async (
     items_sold_change: itemsSoldChange,
     items_sold_change_percent: itemsSoldChangePercent
   };
+};
+
+export const getPaymentMethodBreakdown = async (
+  filters: TopSellingFilters
+): Promise<PaymentBreakdown[]> => {
+  const { startDate, endDate } = filters;
+
+  let query = supabase
+    .from('sales')
+    .select('payment_method, total_amount');
+
+  if (startDate) {
+    query = query.gte('created_at', `${startDate}T00:00:00`);
+  }
+  if (endDate) {
+    query = query.lte('created_at', `${endDate}T23:59:59`);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(`Error fetching payment breakdown: ${error.message}`);
+  }
+
+  const methodMap: Record<string, { total: number; count: number }> = {};
+  let grandTotal = 0;
+
+  (data || []).forEach(sale => {
+    const method = sale.payment_method || 'Otro';
+    const amount = parseFloat(sale.total_amount || 0);
+    if (!methodMap[method]) {
+      methodMap[method] = { total: 0, count: 0 };
+    }
+    methodMap[method].total += amount;
+    methodMap[method].count += 1;
+    grandTotal += amount;
+  });
+
+  const breakdown: PaymentBreakdown[] = Object.entries(methodMap).map(([method, stats]) => ({
+    method,
+    total: stats.total,
+    count: stats.count,
+    percentage: grandTotal > 0 ? (stats.total / grandTotal) * 100 : 0
+  }));
+
+  return breakdown.sort((a, b) => b.total - a.total);
 };

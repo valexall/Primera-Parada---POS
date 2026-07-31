@@ -239,3 +239,10 @@ export interface DayComparison {
   items_sold_change: number;
   items_sold_change_percent: number;
 }
+
+export interface PaymentBreakdown {
+  method: string;      // "Efectivo" | "Yape"
+  total: number;       // monto total en S/.
+  count: number;       // cantidad de ventas
+  percentage: number;  // % del total
+}

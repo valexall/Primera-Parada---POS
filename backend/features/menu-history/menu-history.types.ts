@@ -65,6 +65,13 @@ export interface HourlySalesPattern {
   avg_order_value: number;
 }
 
+export interface PaymentBreakdown {
+  method: string;      // "Efectivo" | "Yape"
+  total: number;       // monto total en S/.
+  count: number;       // cantidad de ventas
+  percentage: number;  // % del total
+}
+
 export interface DayComparison {
   previous_date: string;
   current_date: string;

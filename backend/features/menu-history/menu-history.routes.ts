@@ -8,7 +8,8 @@ import {
   getRevenueTrends,
   getCategoryPerformance,
   getHourlySalesPattern,
-  compareSnapshots
+  compareSnapshots,
+  getPaymentMethodBreakdown
 } from './menu-history.controller';
 import { verifyToken } from '../../middleware/authMiddleware';
 
@@ -29,6 +30,8 @@ router.get('/analytics/revenue-trends', getRevenueTrends);
 router.get('/analytics/category-performance', getCategoryPerformance);
 
 router.get('/analytics/hourly-pattern', getHourlySalesPattern);
+
+router.get('/analytics/payment-breakdown', getPaymentMethodBreakdown);
 
 router.get('/compare/:currentDate', compareSnapshots);
 

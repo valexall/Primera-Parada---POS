@@ -107,3 +107,15 @@ export const compareSnapshots = asyncHandler(async (req: Request, res: Response)
 
   res.json(comparison);
 });
+
+export const getPaymentMethodBreakdown = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { startDate, endDate } = req.query;
+
+  const filters = {
+    startDate: startDate as string | undefined,
+    endDate: endDate as string | undefined
+  };
+
+  const breakdown = await MenuHistoryService.getPaymentMethodBreakdown(filters);
+  res.json(breakdown);
+});
