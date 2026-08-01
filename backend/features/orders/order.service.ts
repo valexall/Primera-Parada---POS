@@ -388,7 +388,7 @@ export const getOrderHistory = async (filters: OrderHistoryFilters): Promise<imp
 
   const now = new Date();
   const peruDateString = now.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
-  const startTimestamp = new Date(`${peruDateString}T00:00:00-05:00`).getTime();
+  const startOfToday = new Date(`${peruDateString}T00:00:00-05:00`).getTime();
 
   const from = (page - 1) * limit;
   const to = from + limit - 1;
@@ -406,18 +406,21 @@ export const getOrderHistory = async (filters: OrderHistoryFilters): Promise<imp
         notes
       )
     `, { count: 'exact' })
-    .lt('timestamp', startTimestamp)
     .order('timestamp', { ascending: false })
     .range(from, to);
 
+  // If custom date range is provided, use those boundaries
   if (startDate) {
-    const start = new Date(`${startDate}T00:00:00-05:00`);
-    query = query.gte('timestamp', start.getTime());
+    const start = new Date(`${startDate}T00:00:00-05:00`).getTime();
+    query = query.gte('timestamp', start);
+  } else {
+    // Default: exclude today (show only historical days)
+    query = query.lt('timestamp', startOfToday);
   }
 
   if (endDate) {
-    const end = new Date(`${endDate}T23:59:59.999-05:00`);
-    query = query.lte('timestamp', end.getTime());
+    const end = new Date(`${endDate}T23:59:59.999-05:00`).getTime();
+    query = query.lte('timestamp', end);
   }
 
   if (status && status !== 'all') {

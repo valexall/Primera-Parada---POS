@@ -18,7 +18,7 @@ import InventoryPage from './pages/InventoryPage';
 import RegisterUserPage from './pages/RegisterUserPage';
 import UserManagementPage from './pages/UserManagementPage';
 import LoginPage from './pages/LoginPage';
-import HistoryPage from './pages/HistoryPage';
+
 import MenuHistoryPage from './pages/MenuHistoryPage';
 import PublicMenuPage from './pages/PublicMenuPage'; // RF46 — Sin auth
 
@@ -72,7 +72,7 @@ export function App() {
                   <Route path={ROUTES.ORDERS} element={<OrderPage />} />
                   <Route path={ROUTES.KITCHEN} element={<KitchenPage />} />
                   <Route path={ROUTES.CASHIER} element={<CashierPage />} />
-                  <Route path={ROUTES.HISTORY} element={<HistoryPage />} />
+
 
                   {/* Rutas Admin */}
                   <Route path={ROUTES.DASHBOARD} element={

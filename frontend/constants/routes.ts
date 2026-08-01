@@ -9,7 +9,7 @@ export const ROUTES = {
   INVENTORY: '/inventory',
   USERS: '/users',
   USER_MANAGEMENT: '/user-management',
-  HISTORY: '/history',
+
   MENU_HISTORY: '/menu-history',
   PUBLIC_MENU: '/menu-publico', // RF46 — Acceso sin login
 } as const;
