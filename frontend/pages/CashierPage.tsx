@@ -28,7 +28,7 @@ const CashierPage: React.FC = () => {
     if (isInitial) setLoading(true);
     try {
       const allOrders = await orderService.getByStatus('Entregado');
-      setOrders(allOrders);
+      setOrders(allOrders.filter(o => o.status === 'Entregado'));
     } finally {
       if (isInitial) setLoading(false);
     }

@@ -34,7 +34,7 @@ export interface OrderItem {
   itemStatus?: 'Pendiente' | 'Listo' | 'Entregado';
 }
 
-export type OrderStatus = 'Pendiente' | 'Listo' | 'Entregado';
+export type OrderStatus = 'Pendiente' | 'Listo' | 'Entregado' | 'Pagado';
 
 export type OrderType = 'Dine-In' | 'Takeaway';
 

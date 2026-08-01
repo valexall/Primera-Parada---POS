@@ -61,6 +61,22 @@ const OrderTimer: React.FC<{ timestamp: number | string; status: OrderStatus }> 
   );
 };
 
+const isTodayInPeru = (ts?: number | string) => {
+  if (!ts) return true;
+  const now = new Date();
+  const peruDateString = now.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+  const startOfPeruDay = new Date(`${peruDateString}T00:00:00-05:00`).getTime();
+  return new Date(ts).getTime() >= startOfPeruDay;
+};
+
+const matchesKitchenFilter = (orderStatus: string, currentFilter: string) => {
+  if (currentFilter === 'Todos') return true;
+  if (currentFilter === 'Entregado') {
+    return orderStatus === 'Entregado' || orderStatus === 'Pagado';
+  }
+  return orderStatus === currentFilter;
+};
+
 const KitchenPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<OrderStatus | 'Todos'>('Todos');
@@ -106,7 +122,7 @@ const KitchenPage: React.FC = () => {
         try { 
           const newOrder = await orderService.getById(payload.new.id);
            
-          const shouldDisplay = filter === 'Todos' || newOrder.status === filter;
+          const shouldDisplay = matchesKitchenFilter(newOrder.status, filter) && isTodayInPeru(newOrder.timestamp);
           
           if (shouldDisplay) {
             setOrders(current => { 
@@ -152,7 +168,7 @@ const KitchenPage: React.FC = () => {
           
           setOrders(current => {
             const existingOrder = current.find(o => o.id === updatedData.id);
-            const shouldDisplay = filter === 'Todos' || updatedData.status === filter;
+            const shouldDisplay = matchesKitchenFilter(updatedData.status, filter) && isTodayInPeru(updatedData.timestamp);
             
             if (existingOrder) {
               if (shouldDisplay) { 
@@ -198,9 +214,9 @@ const KitchenPage: React.FC = () => {
         event: '*', 
         schema: 'public', 
         table: 'order_items' 
-      }, async (payload) => {
+      }, async (payload: any) => {
         try { 
-          const orderId = (payload.new as { order_id?: string })?.order_id || (payload.old as { order_id?: string })?.order_id;
+          const orderId = payload.new?.order_id || payload.old?.order_id;
           
           if (!orderId) return;
            
@@ -211,7 +227,7 @@ const KitchenPage: React.FC = () => {
           }
           
           const fullOrder = await orderService.getById(orderId);
-          const shouldDisplay = filter === 'Todos' || fullOrder.status === filter;
+          const shouldDisplay = matchesKitchenFilter(fullOrder.status, filter) && isTodayInPeru(fullOrder.timestamp);
           
           setOrders(current => {
             const exists = current.some(o => o.id === orderId);
@@ -351,7 +367,9 @@ const KitchenPage: React.FC = () => {
     switch (status) {
       case 'Pendiente': return 'bg-white dark:bg-slate-800 border-l-[6px] border-amber-500 shadow-md';
       case 'Listo': return 'bg-green-50 dark:bg-green-900/20 border-l-[6px] border-green-500 shadow-sm opacity-90';
-      case 'Entregado': return 'bg-slate-100 dark:bg-slate-900 border-l-[6px] border-slate-300 dark:border-slate-700 opacity-60';
+      case 'Entregado':
+      case 'Pagado':
+        return 'bg-slate-100 dark:bg-slate-900 border-l-[6px] border-slate-300 dark:border-slate-700 opacity-60';
       default: return 'bg-white dark:bg-slate-800';
     }
   };

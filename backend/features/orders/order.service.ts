@@ -59,9 +59,9 @@ export const getAllOrders = async (): Promise<Order[]> => {
 };
 
 export const getOrdersByStatus = async (status: string): Promise<Order[]> => {
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-  const startTimestamp = startOfDay.getTime();
+  const now = new Date();
+  const peruDateString = now.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+  const startOfPeruDay = new Date(`${peruDateString}T00:00:00-05:00`).getTime();
 
   let query = supabase
     .from('orders')
@@ -77,11 +77,15 @@ export const getOrdersByStatus = async (status: string): Promise<Order[]> => {
         item_status
       )
     `)
-    .gte('timestamp', startTimestamp)
+    .gte('timestamp', startOfPeruDay)
     .order('timestamp', { ascending: false });
 
   if (status && status !== 'all') {
-    query = query.eq('status', status);
+    if (status === 'Entregado') {
+      query = query.in('status', ['Entregado', 'Pagado']);
+    } else {
+      query = query.eq('status', status);
+    }
   }
 
   const { data, error } = await query;
@@ -382,9 +386,9 @@ export const deleteOrder = async (orderId: string): Promise<{ message: string }>
 export const getOrderHistory = async (filters: OrderHistoryFilters): Promise<import('./order.types').PaginatedResponse<Order>> => {
   const { startDate, endDate, status, page = 1, limit = 20 } = filters;
 
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  const startTimestamp = startOfToday.getTime();
+  const now = new Date();
+  const peruDateString = now.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+  const startTimestamp = new Date(`${peruDateString}T00:00:00-05:00`).getTime();
 
   const from = (page - 1) * limit;
   const to = from + limit - 1;
@@ -407,14 +411,12 @@ export const getOrderHistory = async (filters: OrderHistoryFilters): Promise<imp
     .range(from, to);
 
   if (startDate) {
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
+    const start = new Date(`${startDate}T00:00:00-05:00`);
     query = query.gte('timestamp', start.getTime());
   }
 
   if (endDate) {
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    const end = new Date(`${endDate}T23:59:59.999-05:00`);
     query = query.lte('timestamp', end.getTime());
   }
 
