@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   MenuIcon, ClipboardIcon, ChefHatIcon, DollarSignIcon, 
-  PieChartIcon, PackageIcon, LogOutIcon, UsersIcon, LayoutGridIcon, XIcon,
+  PieChartIcon, LogOutIcon, UsersIcon, LayoutGridIcon, XIcon,
   MoonIcon, SunIcon, BarChart3Icon
 } from 'lucide-react';
 import { ROUTES } from '../../constants/routes';
@@ -59,9 +59,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <Link to={ROUTES.DASHBOARD} className={getLinkClass(ROUTES.DASHBOARD)} onClick={() => setIsMobileMenuOpen(false)}>
             <PieChartIcon size={20} /> Finanzas
           </Link>
+          {/* Módulo de Inventario oculto temporalmente - listo para activar cuando el negocio requiera control de almacén:
           <Link to={ROUTES.INVENTORY} className={getLinkClass(ROUTES.INVENTORY)} onClick={() => setIsMobileMenuOpen(false)}>
             <PackageIcon size={20} /> Inventario
           </Link>
+          */}
           <Link to={ROUTES.USERS} className={getLinkClass(ROUTES.USERS)} onClick={() => setIsMobileMenuOpen(false)}>
             <UsersIcon size={20} /> Agregar Usuario
           </Link>
