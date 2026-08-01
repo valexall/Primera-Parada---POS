@@ -3,6 +3,7 @@ import {
   PlusIcon, PencilIcon, TrashIcon, SearchIcon, XIcon, SaveIcon,
   XCircleIcon, CheckCircleIcon, UtensilsCrossed, MicIcon, MicOffIcon,
   ImageIcon, Upload, Trash2Icon, ImageOffIcon, TagIcon,
+  LayoutGridIcon, TableIcon, ChevronLeftIcon, ChevronRightIcon,
 } from 'lucide-react';
 import { MenuItem, MenuCategory, MENU_CATEGORIES, CATEGORY_COLORS } from '../types';
 import { menuService } from '../services/menuService';
@@ -165,6 +166,9 @@ const MenuPage: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', price: '', category: 'Extras' as MenuCategory });
@@ -411,6 +415,16 @@ const MenuPage: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const totalItemsCount = menuItems.length;
+  const availableItemsCount = menuItems.filter(i => i.is_available !== false).length;
+  const unavailableItemsCount = totalItemsCount - availableItemsCount;
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / itemsPerPage));
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   // Plato siendo editado (para la zona de imagen)
   const editingItem = editingId ? menuItems.find(m => m.id === editingId) : null;
   const currentImageUrl = deleteCurrentImage ? null : (editingItem?.image_url ?? null);
@@ -435,10 +449,41 @@ const MenuPage: React.FC = () => {
         </button>
       </div>
 
+      {/* ─── MINI KPIS DEL MENÚ ─── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-sm">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Total Platos</p>
+            <p className="text-2xl font-black text-slate-800 dark:text-slate-100 mt-0.5">{totalItemsCount}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-lg">
+            🍽️
+          </div>
+        </div>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-sm">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Disponibles</p>
+            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">{availableItemsCount}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-lg">
+            ✅
+          </div>
+        </div>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-sm">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Agotados</p>
+            <p className="text-2xl font-black text-red-600 dark:text-red-400 mt-0.5">{unavailableItemsCount}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400 font-bold text-lg">
+            ⚠️
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
         {/* Toolbar */}
         <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div className="relative max-w-md flex-1">
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
               <input
@@ -446,8 +491,36 @@ const MenuPage: React.FC = () => {
                 placeholder="Buscar plato..."
                 className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200"
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={e => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
               />
+            </div>
+            {/* Toggle de Vista Grid / Table */}
+            <div className="flex bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl self-start sm:self-center">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+                  viewMode === 'grid'
+                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
+              >
+                <LayoutGridIcon size={14} />
+                Cuadrícula
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+                  viewMode === 'table'
+                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
+              >
+                <TableIcon size={14} />
+                Tabla
+              </button>
             </div>
           </div>
           {/* RF45 — Filtro por categoría */}
@@ -455,102 +528,255 @@ const MenuPage: React.FC = () => {
             <CategoryTabs
               categories={['Todos', ...MENU_CATEGORIES]}
               selected={selectedCategory}
-              onSelect={setSelectedCategory}
+              onSelect={cat => {
+                setSelectedCategory(cat);
+                setCurrentPage(1);
+              }}
             />
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
-              <tr>
-                <th className="px-6 py-4 w-16">Imagen</th>
-                <th className="px-6 py-4">Nombre del Plato</th>
-                <th className="px-6 py-4">Categoría</th>
-                <th className="px-6 py-4">Precio</th>
-                <th className="px-6 py-4 text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {filteredItems.map(item => (
-                <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors group">
-                  {/* Thumbnail de imagen */}
-                  <td className="px-6 py-3">
-                    {item.image_url ? (
-                      <img
-                        src={item.image_url}
-                        alt={item.name}
-                        className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-600 shadow-sm"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center border border-dashed border-slate-200 dark:border-slate-600">
-                        <ImageOffIcon size={16} className="text-slate-300 dark:text-slate-500" />
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-slate-700 dark:text-slate-200">{item.name}</span>
-                      {item.is_available === false && (
-                        <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold rounded-full">
-                          AGOTADO
-                        </span>
+        {/* ─── VISTA DE CUADRÍCULA (GRID) ─── */}
+        {viewMode === 'grid' ? (
+          <div className="p-6 bg-slate-50/30 dark:bg-slate-900/30">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {paginatedItems.map(item => {
+                const cat = (item.category ?? 'Extras') as MenuCategory;
+                const colors = CATEGORY_COLORS[cat];
+                const isAvailable = item.is_available !== false;
+                return (
+                  <div
+                    key={item.id}
+                    className={`bg-white dark:bg-slate-800 rounded-3xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl flex flex-col overflow-hidden group ${
+                      isAvailable
+                        ? 'border-slate-200 dark:border-slate-700 shadow-sm'
+                        : 'border-red-200 dark:border-red-900/50 opacity-80'
+                    }`}
+                  >
+                    {/* Contenedor de Imagen */}
+                    <div className="relative h-44 w-full bg-slate-100 dark:bg-slate-900 overflow-hidden">
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 dark:text-slate-600">
+                          <ImageOffIcon size={32} />
+                          <span className="text-xs font-medium mt-1">Sin Imagen</span>
+                        </div>
                       )}
+                      {/* Badge Categoría */}
+                      <span className={`absolute top-3 right-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold shadow-md ${colors.bg} ${colors.text} ${colors.darkBg} ${colors.darkText}`}>
+                        <TagIcon size={10} />
+                        {cat}
+                      </span>
+                      {/* Badge Estado */}
+                      <span
+                        className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold shadow-md ${
+                          isAvailable
+                            ? 'bg-emerald-500/90 text-white backdrop-blur-sm'
+                            : 'bg-red-500/90 text-white backdrop-blur-sm'
+                        }`}
+                      >
+                        {isAvailable ? 'Disponible' : 'Agotado'}
+                      </span>
                     </div>
-                  </td>
-                  {/* RF45 — Columna Categoría */}
-                  <td className="px-6 py-4">
-                    {(() => {
-                      const cat = (item.category ?? 'Extras') as MenuCategory;
-                      const colors = CATEGORY_COLORS[cat];
-                      return (
+
+                    {/* Cuerpo de la Tarjeta */}
+                    <div className="p-4 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 line-clamp-1">
+                          {item.name}
+                        </h3>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 font-mono">
+                          ID: {item.id.slice(0, 8)}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 flex items-baseline justify-between">
+                        <span className="text-xs font-bold uppercase text-slate-400 dark:text-slate-500">
+                          Precio
+                        </span>
+                        <span className="text-lg font-black text-amber-600 dark:text-amber-400 font-mono">
+                          S/. {item.price.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Pie de Acciones */}
+                    <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
+                      {/* Switch Disponibilidad */}
+                      <button
+                        onClick={() => toggleAvailability(item)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                          isAvailable
+                            ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200'
+                            : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 hover:bg-red-200'
+                        }`}
+                        title="Cambiar disponibilidad"
+                      >
+                        {isAvailable ? <CheckCircleIcon size={14} /> : <XCircleIcon size={14} />}
+                        <span>{isAvailable ? 'Activo' : 'Agotado'}</span>
+                      </button>
+
+                      {/* Botones de Editar / Eliminar */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => openModal(item)}
+                          className="p-2 text-slate-500 dark:text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-xl transition-colors"
+                          title="Editar plato e imagen"
+                        >
+                          <PencilIcon size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="p-2 text-slate-500 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-colors"
+                          title="Eliminar plato"
+                        >
+                          <TrashIcon size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {paginatedItems.length === 0 && (
+              <div className="p-12 text-center text-slate-400 dark:text-slate-500">
+                <UtensilsCrossed size={40} className="mx-auto mb-3 opacity-30" />
+                <p className="font-medium">No se encontraron platos con los filtros seleccionados.</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* ─── VISTA DE TABLA COMPACTA (TABLE) ─── */
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
+                <tr>
+                  <th className="px-6 py-4 w-16">Imagen</th>
+                  <th className="px-6 py-4">Nombre del Plato</th>
+                  <th className="px-6 py-4">Categoría</th>
+                  <th className="px-6 py-4">Precio</th>
+                  <th className="px-6 py-4 text-center">Estado</th>
+                  <th className="px-6 py-4 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                {paginatedItems.map(item => {
+                  const cat = (item.category ?? 'Extras') as MenuCategory;
+                  const colors = CATEGORY_COLORS[cat];
+                  const isAvailable = item.is_available !== false;
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors group">
+                      <td className="px-6 py-3">
+                        {item.image_url ? (
+                          <img
+                            src={item.image_url}
+                            alt={item.name}
+                            className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-600 shadow-sm"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center border border-dashed border-slate-200 dark:border-slate-600">
+                            <ImageOffIcon size={16} className="text-slate-300 dark:text-slate-500" />
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-slate-700 dark:text-slate-200">{item.name}</span>
+                          {!isAvailable && (
+                            <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold rounded-full">
+                              AGOTADO
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${colors.bg} ${colors.text} ${colors.darkBg} ${colors.darkText}`}>
                           <TagIcon size={10} />
                           {cat}
                         </span>
-                      );
-                    })()}
-                  </td>
-                  <td className="px-6 py-4 font-mono text-slate-600 dark:text-slate-300">S/. {item.price.toFixed(2)}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => toggleAvailability(item)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          item.is_available === false
-                            ? 'text-red-400 dark:text-red-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30'
-                            : 'text-green-400 dark:text-green-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30'
-                        }`}
-                        title={item.is_available === false ? 'Marcar como disponible' : 'Marcar como agotado'}
-                      >
-                        {item.is_available === false ? <CheckCircleIcon size={18} /> : <XCircleIcon size={18} />}
-                      </button>
-                      <button
-                        onClick={() => openModal(item)}
-                        className="p-2 text-slate-400 dark:text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors"
-                        title="Editar plato e imagen"
-                      >
-                        <PencilIcon size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                      >
-                        <TrashIcon size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {filteredItems.length === 0 && (
-            <div className="p-8 text-center text-slate-400 dark:text-slate-500">
-              No se encontraron resultados
-            </div>
-          )}
-        </div>
+                      </td>
+                      <td className="px-6 py-4 font-mono font-bold text-amber-600 dark:text-amber-400">
+                        S/. {item.price.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => toggleAvailability(item)}
+                          className={`px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 transition-all ${
+                            isAvailable
+                              ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200'
+                              : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 hover:bg-red-200'
+                          }`}
+                          title="Clic para cambiar disponibilidad"
+                        >
+                          {isAvailable ? <CheckCircleIcon size={12} /> : <XCircleIcon size={12} />}
+                          <span>{isAvailable ? 'Disponible' : 'Agotado'}</span>
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => openModal(item)}
+                            className="p-2 text-slate-400 dark:text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors"
+                            title="Editar plato e imagen"
+                          >
+                            <PencilIcon size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                            title="Eliminar plato"
+                          >
+                            <TrashIcon size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {paginatedItems.length === 0 && (
+              <div className="p-8 text-center text-slate-400 dark:text-slate-500">
+                No se encontraron platos con los filtros seleccionados.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── PIE DE PAGINACIÓN ─── */}
+        {filteredItems.length > 0 && (
+          <div className="px-6 py-4 bg-slate-50/80 dark:bg-slate-900/80 border-t border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, filteredItems.length)} al {Math.min(currentPage * itemsPerPage, filteredItems.length)} de {filteredItems.length} platos
+            </span>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-1 transition-all"
+                >
+                  <ChevronLeftIcon size={14} /> Anterior
+                </button>
+                <div className="px-3 py-1 text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Página {currentPage} de {totalPages}
+                </div>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-1 transition-all"
+                >
+                  Siguiente <ChevronRightIcon size={14} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ─── MODAL ─────────────────────────────────────────────────────────── */}
