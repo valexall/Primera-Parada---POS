@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   PlusIcon,
   RefreshCwIcon,
@@ -43,16 +43,20 @@ const fmtHour = (h: number | null) => {
 /* ─── Date presets ─── */
 type Preset = '7d' | '30d' | 'custom';
 
+const formatPeruDate = (d: Date): string => {
+  return d.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+};
+
 const getPresetDates = (preset: Preset): { start: string; end: string } => {
   const today = new Date();
-  const end = today.toISOString().split('T')[0];
+  const end = formatPeruDate(today);
   if (preset === '7d') {
     const s = new Date(today); s.setDate(today.getDate() - 6);
-    return { start: s.toISOString().split('T')[0], end };
+    return { start: formatPeruDate(s), end };
   }
   if (preset === '30d') {
     const s = new Date(today); s.setDate(today.getDate() - 29);
-    return { start: s.toISOString().split('T')[0], end };
+    return { start: formatPeruDate(s), end };
   }
   return { start: '', end: '' };
 };
@@ -79,11 +83,7 @@ const MenuHistoryPage: React.FC = () => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [loadingCharts, setLoadingCharts] = useState(false);
 
-  useEffect(() => {
-    loadAll();
-  }, [startDate, endDate]);
-
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     setLoadingHistory(true);
     setLoadingCharts(true);
 
@@ -106,7 +106,11 @@ const MenuHistoryPage: React.FC = () => {
     setPayments(payResult);
     setLoadingHistory(false);
     setLoadingCharts(false);
-  };
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
 
   const handlePreset = (p: Preset) => {
     setPreset(p);

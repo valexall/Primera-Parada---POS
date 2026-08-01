@@ -42,26 +42,26 @@ BEGIN
   SELECT COALESCE(SUM(total_amount), 0)
   INTO v_total_sales
   FROM sales
-  WHERE DATE(created_at) = target_date;
+  WHERE DATE(created_at AT TIME ZONE 'America/Lima') = target_date;
   
   -- Calculate total expenses for the day
   SELECT COALESCE(SUM(amount), 0)
   INTO v_total_expenses
   FROM expenses
-  WHERE DATE(created_at) = target_date;
+  WHERE DATE(created_at AT TIME ZONE 'America/Lima') = target_date;
   
   -- Calculate sales by payment method (Cash)
   SELECT COALESCE(SUM(total_amount), 0)
   INTO v_cash_sales
   FROM sales
-  WHERE DATE(created_at) = target_date
+  WHERE DATE(created_at AT TIME ZONE 'America/Lima') = target_date
     AND payment_method = 'Efectivo';
   
   -- Calculate sales by payment method (Yape)
   SELECT COALESCE(SUM(total_amount), 0)
   INTO v_yape_sales
   FROM sales
-  WHERE DATE(created_at) = target_date
+  WHERE DATE(created_at AT TIME ZONE 'America/Lima') = target_date
     AND payment_method = 'Yape';
   
   -- Calculate net income

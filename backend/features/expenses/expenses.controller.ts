@@ -11,12 +11,14 @@ export const getDailyExpenses = asyncHandler(async (req: Request, res: Response)
 
 
 export const getExpenses = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { date, startDate, endDate } = req.query;
+  const { date, startDate, endDate, page, limit } = req.query;
 
   const filters = {
     date: date as string | undefined,
     startDate: startDate as string | undefined,
-    endDate: endDate as string | undefined
+    endDate: endDate as string | undefined,
+    page: page ? parseInt(page as string, 10) : 1,
+    limit: limit ? parseInt(limit as string, 10) : 20
   };
 
   const expenses = await ExpensesService.getExpenses(filters);

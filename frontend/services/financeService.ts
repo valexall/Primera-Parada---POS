@@ -1,5 +1,5 @@
 import api from './api';
-import { Expense, DailySummary, Sale, PartialSaleRequest, SalesHistoryResponse } from '../types';
+import { Expense, DailySummary, PartialSaleRequest, SalesHistoryResponse, PaginatedExpensesResponse } from '../types';
 
 export const financeService = {
   // Ventas
@@ -16,7 +16,17 @@ export const financeService = {
 
   // Gastos
   getDailyExpenses: async (): Promise<Expense[]> => {
-    const response = await api.get('/expenses');
+    const response = await api.get('/expenses/daily');
+    return response.data;
+  },
+
+  getExpensesHistory: async (
+    startDate: string,
+    endDate: string,
+    page = 1,
+    limit = 20
+  ): Promise<PaginatedExpensesResponse> => {
+    const response = await api.get(`/expenses?startDate=${startDate}&endDate=${endDate}&page=${page}&limit=${limit}`);
     return response.data;
   },
 
@@ -35,8 +45,8 @@ export const financeService = {
   getSalesHistory: async (
     startDate: string, 
     endDate: string, 
-    page: number = 1, 
-    limit: number = 20
+    page = 1, 
+    limit = 20
   ): Promise<SalesHistoryResponse> => {
     const response = await api.get(`/sales/history?startDate=${startDate}&endDate=${endDate}&page=${page}&limit=${limit}`);
     return response.data;

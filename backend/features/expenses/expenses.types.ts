@@ -13,11 +13,23 @@ export interface Expense {
 export interface CreateExpenseRequest {
   description: string;
   amount: number;
-  category: string;
+  category?: string;
 }
 
 export interface ExpenseFilters {
   date?: string;
   startDate?: string;
   endDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedExpensesResponse {
+  data: Expense[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }

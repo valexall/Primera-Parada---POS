@@ -41,8 +41,8 @@ export const getSalesHistory = async (filters: SalesHistoryFilters): Promise<Pag
 
   if (startDate && endDate) {
     query = query
-      .gte('created_at', `${startDate}T00:00:00`)
-      .lte('created_at', `${endDate}T23:59:59`);
+      .gte('created_at', `${startDate}T00:00:00.000-05:00`)
+      .lte('created_at', `${endDate}T23:59:59.999-05:00`);
   }
 
   const { data, error, count } = await query;

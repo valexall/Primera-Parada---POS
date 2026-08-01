@@ -106,8 +106,9 @@ export interface Expense {
   id: string;
   description: string;
   amount: number;
-  category: 'Servicios' | 'Personal' | 'Insumos' | 'Otros';
-  date: string;
+  category: 'Servicios' | 'Personal' | 'Insumos' | 'Otros' | string;
+  date?: string;
+  created_at?: string;
 }
 
 export interface DailySummary {
@@ -129,6 +130,11 @@ export interface SalesPagination {
 
 export interface SalesHistoryResponse {
   data: Sale[];
+  pagination: SalesPagination;
+}
+
+export interface PaginatedExpensesResponse {
+  data: Expense[];
   pagination: SalesPagination;
 }
 
